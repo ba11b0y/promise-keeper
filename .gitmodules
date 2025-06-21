@@ -1,0 +1,3 @@
+[submodule "apple-mcp"]
+	path = apple-mcp
+	url = git@github.com:supermemoryai/apple-mcp.git
