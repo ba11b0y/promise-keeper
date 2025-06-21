@@ -274,6 +274,11 @@ class PromiseKeeperApp {
     ipcMain.handle('mcp-reminders-create', async (_, { name, listName, notes, dueDate }: { name: string; listName?: string; notes?: string; dueDate?: string }) => {
       return mcpClient.createReminder(name, listName, notes, dueDate);
     });
+
+    // Handle manual screenshot requests
+    ipcMain.handle('take-screenshot-now', () => {
+      this.takeScreenshotAndProcess();
+    });
   }
 
   private startScreenshots() {

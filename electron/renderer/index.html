@@ -392,6 +392,77 @@
             max-height: 200px;
             overflow-y: auto;
         }
+
+        /* Screenshot Controls */
+        .screenshot-controls {
+            background: rgba(102, 126, 234, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .screenshot-toggle-container {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .toggle-label input[type="checkbox"] {
+            display: none;
+        }
+
+        .toggle-slider {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 24px;
+            margin-right: 12px;
+            transition: background 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-label input[type="checkbox"]:checked + .toggle-slider {
+            background: #667eea;
+        }
+
+        .toggle-label input[type="checkbox"]:checked + .toggle-slider::before {
+            transform: translateX(24px);
+        }
+
+        .toggle-text {
+            user-select: none;
+        }
+
+        #takeScreenshotBtn {
+            flex-shrink: 0;
+            min-width: 180px;
+        }
     </style>
 </head>
 <body>
@@ -463,6 +534,18 @@
                 ></textarea>
                 <button class="btn btn-primary add-promise-btn" id="addPromiseBtn">Add Promise</button>
             </div>
+
+            <!-- Screenshot Controls -->
+            <div class="screenshot-controls">
+                <div class="screenshot-toggle-container">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="autoScreenshotToggle">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Auto-capture screenshots for promise detection</span>
+                    </label>
+                </div>
+                <button class="btn btn-secondary" id="takeScreenshotBtn">📸 Take Screenshot Now</button>
+            </div>
             
             <div class="promises-list" id="promisesList">
                 <div class="loading" id="promisesLoading">Loading your promises...</div>
@@ -490,7 +573,7 @@
         <div class="debug-section">
             <h4>Info</h4>
             <p style="font-size: 12px; color: #ccc; line-height: 1.4;">
-                Screenshots are taken every 30 seconds and automatically processed for promise extraction.
+                Use the toggle above to enable automatic screenshot processing for promise extraction, or take manual screenshots as needed.
                 <br><br>
                 Press <kbd>Ctrl+D</kbd> or <kbd>Cmd+D</kbd> to toggle this panel.
             </p>

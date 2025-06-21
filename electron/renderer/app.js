@@ -34,6 +34,8 @@ class PromiseKeeperApp {
     constructor() {
         this.currentUser = null;
         this.promises = [];
+        this.autoScreenshotEnabled = false; // Default to off
+        this.manualScreenshotRequested = false; // Flag for manual screenshots
         this.initializeApp();
     }
 
@@ -84,6 +86,10 @@ class PromiseKeeperApp {
                 this.handleRegister();
             }
         });
+
+        // Screenshot control handlers
+        document.getElementById('autoScreenshotToggle').addEventListener('change', (e) => this.toggleAutoScreenshot(e.target.checked));
+        document.getElementById('takeScreenshotBtn').addEventListener('click', () => this.takeScreenshotNow());
 
         // Debug panel handlers
         document.getElementById('debugToggle').addEventListener('click', () => this.toggleDebugPanel());
@@ -735,6 +741,9 @@ class PromiseKeeperApp {
             document.getElementById('userEmail').textContent = this.currentUser.email;
         }
         
+        // Load screenshot preferences
+        this.loadScreenshotPreferences();
+        
         this.clearLoginMessages();
         this.clearRegisterMessages();
     }
@@ -780,6 +789,18 @@ class PromiseKeeperApp {
         if (!this.currentUser) {
             console.log('Screenshot promise processing skipped: user not logged in');
             return;
+        }
+
+        // Allow processing if it's a manual screenshot or if auto-screenshot is enabled
+        if (!this.autoScreenshotEnabled && !this.manualScreenshotRequested) {
+            console.log('Screenshot promise processing skipped: auto-screenshot disabled');
+            return;
+        }
+
+        // Reset manual screenshot flag
+        if (this.manualScreenshotRequested) {
+            this.manualScreenshotRequested = false;
+            console.log('Processing manual screenshot...');
         }
 
         try {
@@ -977,6 +998,64 @@ class PromiseKeeperApp {
     closeDebugPanel() {
         const panel = document.getElementById('debugPanel');
         panel.classList.remove('open');
+    }
+
+    toggleAutoScreenshot(enabled) {
+        this.autoScreenshotEnabled = enabled;
+        console.log('Auto-screenshot:', enabled ? 'enabled' : 'disabled');
+        
+        // Store the preference in localStorage
+        localStorage.setItem('autoScreenshotEnabled', enabled.toString());
+        
+        // Notify the main process about the change
+        if (window.electronAPI?.screenshots?.setAutoScreenshotEnabled) {
+            window.electronAPI.screenshots.setAutoScreenshotEnabled(enabled);
+        }
+    }
+
+    async takeScreenshotNow() {
+        if (!this.currentUser) {
+            this.showUploadMessage('Please log in first', 'error');
+            return;
+        }
+
+        try {
+            // Set flag to allow processing this screenshot even if auto-screenshot is disabled
+            this.manualScreenshotRequested = true;
+            
+            // Request a screenshot from the main process - it will automatically call onProcessScreenshotForPromises
+            if (window.electronAPI?.screenshots?.takeScreenshotNow) {
+                console.log('Requesting manual screenshot...');
+                await window.electronAPI.screenshots.takeScreenshotNow();
+                this.showUploadMessage('📸 Screenshot taken! Processing for promises...', 'info');
+            } else {
+                // Reset flag since we couldn't take screenshot
+                this.manualScreenshotRequested = false;
+                console.warn('Manual screenshot API not available');
+                this.showUploadMessage('Manual screenshot API not found - please restart the app', 'error');
+            }
+        } catch (error) {
+            // Reset flag on error
+            this.manualScreenshotRequested = false;
+            console.error('Error requesting manual screenshot:', error);
+            this.showUploadMessage('Error requesting screenshot: ' + error.message, 'error');
+        }
+    }
+
+
+
+    // Load screenshot preferences on initialization
+    loadScreenshotPreferences() {
+        const saved = localStorage.getItem('autoScreenshotEnabled');
+        if (saved !== null) {
+            this.autoScreenshotEnabled = saved === 'true';
+        }
+        
+        // Update the UI to reflect the current state
+        const toggle = document.getElementById('autoScreenshotToggle');
+        if (toggle) {
+            toggle.checked = this.autoScreenshotEnabled;
+        }
     }
 }
 
