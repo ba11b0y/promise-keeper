@@ -1,12 +1,24 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import base64
-from typing import Optional, Union
+from typing import Optional, Union, Dict, Any
 from dotenv import load_dotenv
 from baml_client import b
 import baml_py
+from supabase import Client
+
+# Import our authentication modules
+from auth import (
+    get_current_user, 
+    get_current_user_optional, 
+    get_supabase_client, 
+    get_supabase_admin_client,
+    get_authenticated_client,
+    require_admin
+)
+from supabase_config import supabase_config
 
 # Load environment variables
 load_dotenv()
@@ -51,6 +63,23 @@ class ImageBase64Request(BaseModel):
 
 class PromiseListResponse(BaseModel):
     promises: list
+
+# Authentication models
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    created_at: str
+
+class AuthTestResponse(BaseModel):
+    message: str
+    user_id: str
+    email: str
+
+class PromiseCreateAuth(BaseModel):
+    title: str
+    description: str
+    due_date: str
+    user_id: Optional[str] = None
 
 # Routes
 @app.get("/")
@@ -141,6 +170,76 @@ async def map_request_to_promise(file: UploadFile = File(...)):
             return BasicPromiseResponse(promise=promises.promises[0].content)
         else:
             return BasicPromiseResponse(promise="No promises found in the image")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+# Authentication and protected routes
+@app.get("/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """Get current authenticated user information"""
+    return UserResponse(
+        id=current_user.get("user_id", current_user.get("sub", "")),
+        email=current_user.get("email", ""),
+        created_at=current_user.get("created_at", "")
+    )
+
+@app.get("/auth/test", response_model=AuthTestResponse)
+async def test_auth(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """Test route to verify authentication works"""
+    return AuthTestResponse(
+        message="Authentication successful!",
+        user_id=current_user.get("user_id", current_user.get("sub", "")),
+        email=current_user.get("email", "")
+    )
+
+# Enhanced promise extraction with user association
+@app.post('/extract_promises_file_auth', response_model=PromiseListResponse)
+async def extract_promises_from_file_authenticated(
+    file: UploadFile = File(...),
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    client: Client = Depends(get_authenticated_client)
+):
+    """Extract promises from an uploaded image file and optionally save to database"""
+    try:
+        # Read the uploaded file
+        image_bytes = await file.read()
+        
+        # Convert bytes to base64 and create baml_py.Image
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+        
+        # Get media type from file content type, default to image/png
+        media_type = file.content_type or "image/png"
+        baml_image = baml_py.Image.from_base64(media_type, image_base64)
+        
+        # Extract promises using BAML
+        promises = b.ExtractPromises(baml_image)
+        
+        # Optionally save promises to database for authenticated user
+        user_id = current_user.get("user_id", current_user.get("sub", ""))
+        saved_promises = []
+        
+        for promise in promises.promises:
+            try:
+                promise_data = {
+                    "title": promise.content[:100],  # Use first 100 chars as title
+                    "description": promise.content,
+                    "due_date": promise.deadline or "2024-12-31",  # Default if no deadline
+                    "user_id": user_id,
+                    "status": "pending",
+                    "to_whom": promise.to_whom
+                }
+                
+                response = client.table("promises").insert(promise_data).execute()
+                if response.data:
+                    saved_promises.append(response.data[0])
+            except Exception as save_error:
+                # Continue even if individual promise save fails
+                print(f"Failed to save promise: {save_error}")
+        
+        return PromiseListResponse(promises=[
+            {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
+            for p in promises.promises
+        ])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 

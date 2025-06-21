@@ -65,6 +65,7 @@ class PromiseKeeperApp {
         // Promise form handlers
         document.getElementById('addPromiseBtn').addEventListener('click', () => this.addPromise());
         document.getElementById('uploadScreenshotBtn').addEventListener('click', () => this.uploadScreenshot());
+        document.getElementById('testBackendAuthBtn').addEventListener('click', () => this.testBackendAuth());
         document.getElementById('promiseInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -356,6 +357,98 @@ class PromiseKeeperApp {
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
+        }
+    }
+
+    async testBackendAuth() {
+        if (!this.currentUser) {
+            this.showTestAuthMessage('Please log in first', 'error');
+            return;
+        }
+
+        this.showTestAuthMessage('Testing backend authentication...', 'loading');
+
+        try {
+            // Get the current user's access token
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            if (!session || !session.access_token) {
+                this.showTestAuthMessage('No valid session found. Please log in again.', 'error');
+                return;
+            }
+
+            // Test the backend auth endpoint
+            const backendUrl = 'http://localhost:8000'; // Local backend URL
+            const response = await fetch(`${backendUrl}/auth/test`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showTestAuthMessage(
+                    `✅ Backend Auth Success!\nMessage: ${result.message}\nUser ID: ${result.user_id}\nEmail: ${result.email}`, 
+                    'success'
+                );
+                
+                // Also test getting user info
+                setTimeout(async () => {
+                    try {
+                        const userInfoResponse = await fetch(`${backendUrl}/auth/me`, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${session.access_token}`,
+                                'Content-Type': 'application/json',
+                            }
+                        });
+                        
+                        if (userInfoResponse.ok) {
+                            const userInfo = await userInfoResponse.json();
+                            this.showTestAuthMessage(
+                                `✅ Backend Auth Success!\n` +
+                                `Message: ${result.message}\n` +
+                                `User ID: ${result.user_id}\n` +
+                                `Email: ${result.email}\n` +
+                                `User Info: ${JSON.stringify(userInfo, null, 2)}`, 
+                                'success'
+                            );
+                        }
+                    } catch (error) {
+                        console.error('User info test error:', error);
+                    }
+                }, 1000);
+                
+            } else {
+                const errorText = await response.text();
+                this.showTestAuthMessage(
+                    `❌ Backend Auth Failed!\nStatus: ${response.status}\nError: ${errorText}`, 
+                    'error'
+                );
+            }
+        } catch (error) {
+            console.error('Backend auth test error:', error);
+            this.showTestAuthMessage(
+                `❌ Backend Connection Failed!\nError: ${error.message}\nMake sure backend is running on localhost:8000`, 
+                'error'
+            );
+        }
+    }
+
+    showTestAuthMessage(message, type = 'info') {
+        const messageDiv = document.getElementById('testAuthResult');
+        messageDiv.className = type;
+        messageDiv.style.whiteSpace = 'pre-wrap'; // Preserve line breaks
+        messageDiv.textContent = message;
+        messageDiv.style.display = 'block';
+        
+        // Auto-hide success and info messages after 10 seconds
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 10000);
         }
     }
 
