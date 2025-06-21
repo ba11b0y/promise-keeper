@@ -6,6 +6,15 @@ struct GeneralSidebarSection: View {
     
     var body: some View {
         
+        Section(header: Text("Promise Keeper")) {
+			
+			NavigationLink {
+				PromisesPane()
+			} label: {
+				Label("My Promises", systemImage: "heart.text.square")
+			}
+        }
+        
         Section(header: Text("General")) {
 			
 			NavigationLink {

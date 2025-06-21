@@ -2,6 +2,10 @@ import Foundation
 
 enum SidebarPane {
     
+    // MARK: Promise Section
+
+    case promises
+    
     // MARK: General Section
 
     case helloWorld

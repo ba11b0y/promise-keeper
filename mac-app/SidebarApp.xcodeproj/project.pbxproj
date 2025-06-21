@@ -54,6 +54,9 @@
 		4180AF092839B0870054FEA9 /* AlwaysOnTop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AF082839B0870054FEA9 /* AlwaysOnTop.swift */; };
 		4180AF0F283A50660054FEA9 /* MenuBarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AF0E283A50660054FEA9 /* MenuBarButton.swift */; };
 		4180AF11283A50770054FEA9 /* MenuBarPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AF10283A50770054FEA9 /* MenuBarPopup.swift */; };
+		50000001000000000000000A /* Promise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50000001000000000000000B /* Promise.swift */; };
+		50000001000000000000000C /* PromiseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50000001000000000000000D /* PromiseManager.swift */; };
+		50000001000000000000000E /* PromisesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50000001000000000000000F /* PromisesPane.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -100,6 +103,9 @@
 		4180AF082839B0870054FEA9 /* AlwaysOnTop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlwaysOnTop.swift; sourceTree = "<group>"; };
 		4180AF0E283A50660054FEA9 /* MenuBarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarButton.swift; sourceTree = "<group>"; };
 		4180AF10283A50770054FEA9 /* MenuBarPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopup.swift; sourceTree = "<group>"; };
+		50000001000000000000000B /* Promise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promise.swift; sourceTree = "<group>"; };
+		50000001000000000000000D /* PromiseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromiseManager.swift; sourceTree = "<group>"; };
+		50000001000000000000000F /* PromisesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromisesPane.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -160,6 +166,8 @@
 			isa = PBXGroup;
 			children = (
 				25D4AD8B2E07339900F48470 /* Auth */,
+				5000000100000000000000010 /* Models */,
+				5000000100000000000000011 /* Managers */,
 				4180AEEC2839A0560054FEA9 /* Utilities */,
 				4180AF032839A87B0054FEA9 /* Custom Views */,
 				4180AEBE283976620054FEA9 /* Settings */,
@@ -211,6 +219,7 @@
 			isa = PBXGroup;
 			children = (
 				4180AEDF28398F320054FEA9 /* Pane Helper */,
+				50000001000000000000000F /* PromisesPane.swift */,
 				4180AECB28397C6F0054FEA9 /* HelloWorldPane.swift */,
 				4180AECD28397C880054FEA9 /* WhatsUpPane.swift */,
 				4180AECF28397DB00054FEA9 /* MoreStuffPane.swift */,
@@ -318,6 +327,22 @@
 				4180AF10283A50770054FEA9 /* MenuBarPopup.swift */,
 			);
 			path = "Menu Bar Button";
+			sourceTree = "<group>";
+		};
+		5000000100000000000000010 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				50000001000000000000000B /* Promise.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		5000000100000000000000011 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				50000001000000000000000D /* PromiseManager.swift */,
+			);
+			path = Managers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -432,6 +457,9 @@
 				4180AEAE2839753E0054FEA9 /* SidebarApp.swift in Sources */,
 				4180AED428397F790054FEA9 /* SidebarPane.swift in Sources */,
 				4180AECC28397C6F0054FEA9 /* HelloWorldPane.swift in Sources */,
+				50000001000000000000000A /* Promise.swift in Sources */,
+				50000001000000000000000C /* PromiseManager.swift in Sources */,
+				50000001000000000000000E /* PromisesPane.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
