@@ -64,8 +64,6 @@ class PromiseKeeperApp {
 
         // Promise form handlers
         document.getElementById('addPromiseBtn').addEventListener('click', () => this.addPromise());
-        document.getElementById('uploadScreenshotBtn').addEventListener('click', () => this.uploadScreenshot());
-        document.getElementById('testBackendAuthBtn').addEventListener('click', () => this.testBackendAuth());
         document.getElementById('promiseInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -83,6 +81,25 @@ class PromiseKeeperApp {
         document.getElementById('confirmPassword').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 this.handleRegister();
+            }
+        });
+
+        // Debug panel handlers
+        document.getElementById('debugToggle').addEventListener('click', () => this.toggleDebugPanel());
+        document.getElementById('debugClose').addEventListener('click', () => this.closeDebugPanel());
+        document.getElementById('uploadScreenshotBtn').addEventListener('click', () => this.uploadScreenshot());
+        document.getElementById('testBackendAuthBtn').addEventListener('click', () => this.testBackendAuth());
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+D or Cmd+D to toggle debug panel
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                e.preventDefault();
+                this.toggleDebugPanel();
+            }
+            // Escape to close debug panel
+            if (e.key === 'Escape') {
+                this.closeDebugPanel();
             }
         });
     }
@@ -919,6 +936,16 @@ class PromiseKeeperApp {
                 }
             }, 300);
         }, 6000);
+    }
+
+    toggleDebugPanel() {
+        const panel = document.getElementById('debugPanel');
+        panel.classList.toggle('open');
+    }
+
+    closeDebugPanel() {
+        const panel = document.getElementById('debugPanel');
+        panel.classList.remove('open');
     }
 }
 
