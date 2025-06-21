@@ -1,5 +1,7 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, globalShortcut } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, desktopCapturer } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 import Store from 'electron-store';
 import { createTrayIcon } from './create-tray-icon';
 
@@ -9,8 +11,8 @@ class PromiseKeeperApp {
   private mainWindow: BrowserWindow | null = null;
   private tray: Tray | null = null;
   private isQuitting = false;
-  private hasActiveNotification = false;
-  private activeNotification: Notification | null = null;
+  private screenshotDir = path.join(os.homedir(), 'Documents', 'Screenshots');
+  private screenshotInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.setupApp();
@@ -22,7 +24,7 @@ class PromiseKeeperApp {
       this.createWindow();
       this.createTray();
       this.setupIPC();
-      this.setupGlobalShortcuts();
+      this.startScreenshots();
     });
 
     // Handle window close
@@ -40,29 +42,7 @@ class PromiseKeeperApp {
 
     app.on('before-quit', () => {
       this.isQuitting = true;
-      // Unregister all shortcuts
-      globalShortcut.unregisterAll();
-    });
-
-    app.on('will-quit', () => {
-      // Unregister all shortcuts
-      globalShortcut.unregisterAll();
-    });
-  }
-
-  private setupGlobalShortcuts() {
-    // Register Tab shortcut
-    globalShortcut.register('Tab', () => {
-      if (this.hasActiveNotification) {
-        // Close the notification if it exists
-        if (this.activeNotification) {
-          this.activeNotification.close();
-          this.activeNotification = null;
-        }
-        this.showWindow();
-        // Reset the active notification flag
-        this.hasActiveNotification = false;
-      }
+      if (this.screenshotInterval) clearInterval(this.screenshotInterval);
     });
   }
 
@@ -73,7 +53,11 @@ class PromiseKeeperApp {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        preload: path.join(__dirname, 'preload.js')
+        preload: path.join(__dirname, 'preload.js'),
+        // Enable media access permissions
+        webSecurity: true,
+        allowRunningInsecureContent: false,
+        experimentalFeatures: true
       },
       show: false,
       frame: true,
@@ -84,6 +68,19 @@ class PromiseKeeperApp {
 
     // Load the HTML file
     this.mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+
+    // Handle media permissions
+    this.mainWindow.webContents.session.setPermissionRequestHandler(
+      (webContents, permission, callback) => {
+        const allowedPermissions = ['camera', 'microphone', 'display-capture'];
+        
+        if (allowedPermissions.includes(permission)) {
+          callback(true); // Allow the permission
+        } else {
+          callback(false); // Deny the permission
+        }
+      }
+    );
 
     // Show window when ready
     this.mainWindow.once('ready-to-show', () => {
@@ -201,39 +198,43 @@ class PromiseKeeperApp {
     // Handle notifications
     ipcMain.handle('show-notification', (_, { title, body }) => {
       if (Notification.isSupported()) {
-        // Close any existing notification
-        if (this.activeNotification) {
-          this.activeNotification.close();
-        }
-
         const notification = new Notification({
           title,
           body,
           silent: false
         });
 
-        // Store reference to active notification
-        this.activeNotification = notification;
-
-        // Set active notification flag
-        this.hasActiveNotification = true;
-
-        // Handle notification close
-        notification.on('close', () => {
-          this.hasActiveNotification = false;
-          this.activeNotification = null;
-        });
-
-        // Handle notification click
         notification.on('click', () => {
           this.showWindow();
-          this.hasActiveNotification = false;
-          this.activeNotification = null;
         });
 
         notification.show();
       }
     });
+  }
+
+  private startScreenshots() {
+    if (!fs.existsSync(this.screenshotDir)) fs.mkdirSync(this.screenshotDir, { recursive: true });
+    this.screenshotInterval = setInterval(() => this.takeScreenshot(), 5000);
+  }
+
+  private async takeScreenshot() {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1920, height: 1080 } });
+      if (sources[0]) {
+        const screenshot = sources[0].thumbnail.toPNG();
+        const filename = `screenshot_${Date.now()}.png`;
+        fs.writeFileSync(path.join(this.screenshotDir, filename), screenshot);
+        this.cleanupScreenshots();
+      }
+    } catch (err) { console.error('Screenshot failed:', err); }
+  }
+
+  private cleanupScreenshots() {
+    try {
+      const files = fs.readdirSync(this.screenshotDir).filter(f => f.endsWith('.png')).map(f => ({ name: f, time: fs.statSync(path.join(this.screenshotDir, f)).mtime })).sort((a, b) => b.time.getTime() - a.time.getTime());
+      files.slice(100).forEach(f => fs.unlinkSync(path.join(this.screenshotDir, f.name)));
+    } catch (err) { console.error('Cleanup failed:', err); }
   }
 }
 
