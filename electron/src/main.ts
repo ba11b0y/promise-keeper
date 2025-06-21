@@ -4,6 +4,10 @@ import * as fs from 'fs';
 import * as os from 'os';
 import Store from 'electron-store';
 import { createTrayIcon } from './create-tray-icon';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env.local file
+dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 const store = new Store();
 

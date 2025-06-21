@@ -10,7 +10,12 @@
     "watch": "tsc -w",
     "package": "electron-builder"
   },
-  "keywords": ["electron", "promises", "todo", "supabase"],
+  "keywords": [
+    "electron",
+    "promises",
+    "todo",
+    "supabase"
+  ],
   "author": "Promise Keeper",
   "license": "MIT",
   "devDependencies": {
@@ -21,6 +26,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
+    "dotenv": "^16.5.0",
     "electron-store": "^8.1.0"
   },
   "build": {
@@ -51,4 +57,4 @@
       "target": "AppImage"
     }
   }
-} 
+}

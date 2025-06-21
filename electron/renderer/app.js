@@ -13,6 +13,22 @@ console.log('Supabase client initialized:', {
     hasKey: !!SUPABASE_ANON_KEY 
 });
 
+// API Configuration
+const API_CONFIG = {
+    // Base URLs
+    baseUrl: window.electronAPI?.env?.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-red-sunset-2072.fly.dev",
+    
+    // API Endpoints
+    endpoints: {
+        extractPromisesFile: "/extract_promises_file"
+    },
+    
+    // Build full URL
+    getUrl(endpoint) {
+        return this.baseUrl + endpoint;
+    }
+};
+
 class PromiseKeeperApp {
     constructor() {
         this.currentUser = null;
@@ -278,7 +294,7 @@ class PromiseKeeperApp {
             formData.append('file', blob, 'screenshot.png');
 
             // Call the API
-            const apiResponse = await fetch('https://promise-keeper-api-red-sunset-2072.fly.dev/extract_promises_file', {
+            const apiResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.endpoints.extractPromisesFile), {
                 method: 'POST',
                 body: formData
             });

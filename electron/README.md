@@ -6,10 +6,12 @@ A simple, elegant promise tracking application with Supabase integration and sys
 
 - 🔐 Secure authentication with Supabase
 - 📝 Add, view, and delete promises
+- 📷 Upload screenshots to extract promises using AI
 - 🖥️ System tray integration - stays in your taskbar
 - 💾 Persistent storage with Supabase database
 - 🎨 Modern, clean UI
 - ⌨️ Keyboard shortcuts (Enter to add promises)
+- 🔧 Configurable API endpoints for development
 
 ## Setup
 
@@ -68,6 +70,23 @@ CREATE POLICY "Users can only see their own promises" ON public.promises
    npm start
    ```
 
+### API Configuration
+
+The app connects to the Promise Keeper API for screenshot processing. By default, it uses the production API at `https://promise-keeper-api-red-sunset-2072.fly.dev`.
+
+#### Local Development with Backend API
+
+If you're running the backend API locally, create a `.env.local` file in the electron directory:
+
+```bash
+# .env.local
+API_BASE_URL_OVERRIDE=http://localhost:8000
+```
+
+This will override the production API URL and use your local backend at `http://localhost:8000` instead.
+
+**Important**: Make sure your local backend is running before starting the Electron app with this configuration.
+
 ## Development
 
 ### Scripts
@@ -98,9 +117,10 @@ npm run package
 
 1. **Authentication**: Sign up or sign in with your email and password
 2. **Add Promises**: Type your promise in the text area and press Enter or click "Add Promise"
-3. **View Promises**: All your promises are displayed in chronological order
-4. **Delete Promises**: Click the delete button on any promise to remove it
-5. **System Tray**: 
+3. **Upload Screenshots**: Click "Upload Screenshot" to select an image file and extract promises using AI
+4. **View Promises**: All your promises are displayed in chronological order
+5. **Delete Promises**: Click the delete button on any promise to remove it
+6. **System Tray**: 
    - Click the tray icon to show/hide the window
    - Right-click for context menu with options
    - The app stays running in the system tray when closed

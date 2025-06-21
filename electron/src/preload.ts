@@ -3,6 +3,10 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
+  // Environment variables
+  env: {
+    API_BASE_URL_OVERRIDE: process.env.API_BASE_URL_OVERRIDE
+  },
   // Store operations
   store: {
     get: (key: string) => ipcRenderer.invoke('store-get', key),
@@ -40,6 +44,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 // Type definitions for the exposed API
 export interface ElectronAPI {
+  env: {
+    API_BASE_URL_OVERRIDE?: string;
+  };
   store: {
     get: (key: string) => Promise<any>;
     set: (key: string, value: any) => Promise<void>;
