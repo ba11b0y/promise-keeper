@@ -20,7 +20,8 @@ const API_CONFIG = {
     
     // API Endpoints
     endpoints: {
-        extractPromisesFile: "/extract_promises_file"
+        extractPromisesFile: "/extract_promises_file",
+        extractPromisesFileAuth: "/extract_promises_file_auth"
     },
     
     // Build full URL
@@ -316,21 +317,31 @@ class PromiseKeeperApp {
             const formData = new FormData();
             formData.append('file', blob, 'screenshot.png');
 
-            // Call the API
-            const apiResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.endpoints.extractPromisesFile), {
+            // Get the current user's access token
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            if (!session || !session.access_token) {
+                this.showUploadMessage('No valid session found. Please log in again.', 'error');
+                return;
+            }
+
+            // Call the API with authentication
+            const apiResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.endpoints.extractPromisesFileAuth), {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
             });
 
             const result = await apiResponse.json();
 
             if (apiResponse.ok) {
                 console.log('API Response:', result); // Debug log to see the structure
-                this.showUploadMessage('Screenshot processed successfully!', 'success');
                 
                 // Display the extracted promises
                 if (result.promises && result.promises.length > 0) {
-                    // Extract text from promise objects
+                    // Extract text from promise objects for display
                     const promiseTexts = result.promises.map(promise => {
                         // Handle different possible response formats
                         if (typeof promise === 'string') {
@@ -347,15 +358,15 @@ class PromiseKeeperApp {
                         }
                     });
 
-                    let message = 'Extracted promises:\n';
+                    let message = `✅ Found and saved ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''}:\n`;
                     promiseTexts.forEach((promise, index) => {
-                        message += `${index + 1}. ${promise}\n`;
+                        const shortPromise = promise.length > 60 ? promise.substring(0, 60) + '...' : promise;
+                        message += `${index + 1}. ${shortPromise}\n`;
                     });
                     this.showUploadMessage(message, 'success');
 
-                    // Add the extracted promises to the input
-                    const input = document.getElementById('promiseInput');
-                    input.value = promiseTexts.join('\n');
+                    // Reload the promises list to show the newly saved promises
+                    await this.loadPromises();
                 } else {
                     this.showUploadMessage('No promises found in the image.', 'info');
                 }
@@ -491,7 +502,10 @@ class PromiseKeeperApp {
     async loadPromises() {
         if (!this.currentUser) return;
 
-        document.getElementById('promisesLoading').style.display = 'block';
+        const loadingElement = document.getElementById('promisesLoading');
+        if (loadingElement) {
+            loadingElement.style.display = 'block';
+        }
 
         const { data, error } = await supabaseClient
             .from('promises')
@@ -499,7 +513,9 @@ class PromiseKeeperApp {
             .eq('owner_id', this.currentUser.id)
             .order('created_at', { ascending: false });
 
-        document.getElementById('promisesLoading').style.display = 'none';
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
 
         if (error) {
             this.showLoginMessage('Failed to load promises: ' + error.message, 'error');
@@ -511,6 +527,11 @@ class PromiseKeeperApp {
 
     renderPromises() {
         const container = document.getElementById('promisesList');
+        
+        if (!container) {
+            // Container doesn't exist yet (user might not be on promises page)
+            return;
+        }
         
         if (this.promises.length === 0) {
             container.innerHTML = '<div class="no-promises">No promises yet. Add your first promise above!</div>';
@@ -771,11 +792,25 @@ class PromiseKeeperApp {
             // Create FormData
             const formData = new FormData();
             formData.append('file', blob, data.filename);
+            // Add screenshot metadata
+            formData.append('screenshot_id', data.screenshotId);
+            formData.append('screenshot_timestamp', new Date(data.timestamp).toISOString());
+
+            // Get the current user's access token
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            if (!session || !session.access_token) {
+                console.error('No valid session found for processing screenshot');
+                return;
+            }
 
             // Call the API using the existing configuration
-            const apiResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.endpoints.extractPromisesFile), {
+            const apiResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.endpoints.extractPromisesFileAuth), {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
             });
 
             const result = await apiResponse.json();
@@ -791,25 +826,20 @@ class PromiseKeeperApp {
                 
                 console.log('Promise screenshot saved to:', savedScreenshotPath);
                 
-                // Create promises automatically with screenshot reference
-                const createdPromises = [];
-                for (const promise of result.promises) {
-                    const createdPromise = await this.createPromiseFromExtraction(promise, data.screenshotId, data.timestamp);
-                    if (createdPromise) {
-                        createdPromises.push(createdPromise);
-                    }
-                }
+                // Since we're using the authenticated endpoint, promises are automatically saved to the database
+                // Just reload the promises list to show the newly created ones
+                await this.loadPromises();
 
                 // Show notification through main process
                 if (window.electronAPI?.notifications) {
                     window.electronAPI.notifications.show(
                         'Promise Keeper',
-                        `Found ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''} in your screen!`
+                        `Found ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''} in your screen and saved to database!`
                     );
                 }
 
-                // Show enhanced indicator with screenshot info
-                this.showAutoPromiseCreatedIndicator(createdPromises, data.screenshotId);
+                // Show enhanced indicator (without individual promise creation)
+                this.showAutoPromiseCreatedIndicator(result.promises, data.screenshotId);
             } else if (!apiResponse.ok) {
                 console.error('API error processing screenshot:', result);
             }
@@ -880,16 +910,17 @@ class PromiseKeeperApp {
         }
     }
 
-    showAutoPromiseCreatedIndicator(createdPromises, screenshotId) {
-        if (!createdPromises || createdPromises.length === 0) return;
+    showAutoPromiseCreatedIndicator(promises, screenshotId) {
+        if (!promises || promises.length === 0) return;
 
         // Create a temporary indicator showing the auto-created promises
         const indicator = document.createElement('div');
         indicator.className = 'auto-promise-indicator';
         
-        const promisesList = createdPromises.map(p => 
-            p.content.length > 50 ? p.content.substring(0, 50) + '...' : p.content
-        ).join('<br>• ');
+        const promisesList = promises.map(p => {
+            const content = p.content || p.text || (typeof p === 'string' ? p : JSON.stringify(p));
+            return content.length > 50 ? content.substring(0, 50) + '...' : content;
+        }).join('<br>• ');
 
         indicator.innerHTML = `
             <div style="
@@ -908,7 +939,7 @@ class PromiseKeeperApp {
                 transform: translateY(-20px);
                 transition: all 0.3s ease;
             ">
-                <strong>✅ ${createdPromises.length} Promise${createdPromises.length > 1 ? 's' : ''} Auto-Created</strong><br>
+                <strong>✅ ${promises.length} Promise${promises.length > 1 ? 's' : ''} Auto-Created & Saved</strong><br>
                 <span style="font-size: 12px; opacity: 0.9;">• ${promisesList}</span><br>
                 <span style="font-size: 10px; opacity: 0.7; margin-top: 4px; display: block;">
                     📸 From screenshot: ${screenshotId}

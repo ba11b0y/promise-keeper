@@ -1,8 +1,9 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, status
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, status, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import base64
+import json
 from typing import Optional, Union, Dict, Any
 from dotenv import load_dotenv
 from baml_client import b
@@ -196,8 +197,10 @@ async def test_auth(current_user: Dict[str, Any] = Depends(get_current_user)):
 @app.post('/extract_promises_file_auth', response_model=PromiseListResponse)
 async def extract_promises_from_file_authenticated(
     file: UploadFile = File(...),
+    screenshot_id: Optional[str] = Form(None),
+    screenshot_timestamp: Optional[str] = Form(None),
     current_user: Dict[str, Any] = Depends(get_current_user),
-    client: Client = Depends(get_authenticated_client)
+    admin_client: Client = Depends(get_supabase_admin_client)
 ):
     """Extract promises from an uploaded image file and optionally save to database"""
     try:
@@ -214,22 +217,26 @@ async def extract_promises_from_file_authenticated(
         # Extract promises using BAML
         promises = b.ExtractPromises(baml_image)
         
-        # Optionally save promises to database for authenticated user
+        # Save promises to database for authenticated user
         user_id = current_user.get("user_id", current_user.get("sub", ""))
         saved_promises = []
         
         for promise in promises.promises:
             try:
                 promise_data = {
-                    "title": promise.content[:100],  # Use first 100 chars as title
-                    "description": promise.content,
-                    "due_date": promise.deadline or "2024-12-31",  # Default if no deadline
-                    "user_id": user_id,
-                    "status": "pending",
-                    "to_whom": promise.to_whom
+                    "content": promise.content,
+                    "owner_id": user_id,
+                    "extracted_from_screenshot": True,
+                    "screenshot_id": screenshot_id,
+                    "screenshot_timestamp": screenshot_timestamp,
+                    "extraction_data": json.dumps({
+                        "to_whom": promise.to_whom,
+                        "deadline": promise.deadline,
+                        "raw_promise": promise.content
+                    })
                 }
                 
-                response = client.table("promises").insert(promise_data).execute()
+                response = admin_client.table("promises").insert(promise_data).execute()
                 if response.data:
                     saved_promises.append(response.data[0])
             except Exception as save_error:
