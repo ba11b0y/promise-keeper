@@ -16,3 +16,4 @@ generator target {
     // This controls what `b.FunctionName()` will be (sync or async).
     default_client_mode sync
 }
+

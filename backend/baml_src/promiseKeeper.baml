@@ -46,3 +46,10 @@ function ExtractPromises(userImage: image) -> PromiseList {
     {{ ctx.output_format }}
   "#
 }
+
+test TestName {
+  functions [ExtractPromises]
+  args {
+    userImage { url "https://imgs.xkcd.com/comics/standards.png" }
+  }
+}
