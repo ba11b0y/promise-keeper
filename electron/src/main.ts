@@ -16,7 +16,9 @@ class PromiseKeeperApp {
   private tray: Tray | null = null;
   private isQuitting = false;
   private screenshotDir = path.join(os.homedir(), 'Documents', 'Screenshots');
+  private promiseScreenshotsDir = path.join(os.homedir(), 'Documents', 'PromiseKeeper', 'PromiseScreenshots');
   private screenshotInterval: NodeJS.Timeout | null = null;
+  private apiBaseUrl = process.env.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-red-sunset-2072.fly.dev";
 
   constructor() {
     this.setupApp();
@@ -234,23 +236,119 @@ class PromiseKeeperApp {
 
       return result.filePaths[0];
     });
+
+    // Handle saving promise screenshots
+    ipcMain.handle('save-promise-screenshot', (_, { screenshotId, promises }) => {
+      return this.savePromiseScreenshot(screenshotId, promises);
+    });
+
+    // Handle getting screenshot paths for viewing
+    ipcMain.handle('get-screenshot-path', (_, screenshotId) => {
+      return this.getScreenshotPath(screenshotId);
+    });
   }
 
   private startScreenshots() {
     if (!fs.existsSync(this.screenshotDir)) fs.mkdirSync(this.screenshotDir, { recursive: true });
-    this.screenshotInterval = setInterval(() => this.takeScreenshot(), 5000);
+    if (!fs.existsSync(this.promiseScreenshotsDir)) fs.mkdirSync(this.promiseScreenshotsDir, { recursive: true });
+    this.screenshotInterval = setInterval(() => this.takeScreenshotAndProcess(), 30000);
   }
 
-  private async takeScreenshot() {
+  private async takeScreenshotAndProcess() {
     try {
-      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1920, height: 1080 } });
+      const sources = await desktopCapturer.getSources({ 
+        types: ['screen'], 
+        thumbnailSize: { width: 1920, height: 1080 } 
+      });
+      
       if (sources[0]) {
         const screenshot = sources[0].thumbnail.toPNG();
-        const filename = `screenshot_${Date.now()}.png`;
-        fs.writeFileSync(path.join(this.screenshotDir, filename), screenshot);
+        const timestamp = Date.now();
+        const screenshotId = `screenshot_${timestamp}`;
+        const filename = `${screenshotId}.png`;
+        const screenshotPath = path.join(this.screenshotDir, filename);
+        
+        // Save screenshot locally (for backup/debugging)
+        fs.writeFileSync(screenshotPath, screenshot);
+        
+        // Send screenshot to renderer process for API processing
+        // Include the screenshotId so we can track it if promises are found
+        if (this.mainWindow) {
+          this.mainWindow.webContents.send('process-screenshot-for-promises', {
+            buffer: screenshot,
+            filename: filename,
+            screenshotId: screenshotId,
+            timestamp: timestamp
+          });
+        }
+        
+        // Clean up old screenshots (but not promise screenshots)
         this.cleanupScreenshots();
       }
-    } catch (err) { console.error('Screenshot failed:', err); }
+    } catch (err) { 
+      console.error('Screenshot failed:', err); 
+    }
+  }
+
+  private savePromiseScreenshot(screenshotId: string, promises: any[]): string {
+    try {
+      const sourceFilename = `${screenshotId}.png`;
+      const sourcePath = path.join(this.screenshotDir, sourceFilename);
+      
+      if (!fs.existsSync(sourcePath)) {
+        console.error('Source screenshot not found:', sourcePath);
+        return '';
+      }
+
+      // Create a unique filename for the promise screenshot
+      const promiseFilename = `${screenshotId}_promises.png`;
+      const promisePath = path.join(this.promiseScreenshotsDir, promiseFilename);
+      
+      // Copy the screenshot to the promise screenshots directory
+      fs.copyFileSync(sourcePath, promisePath);
+      
+      // Create metadata file
+      const metadataPath = path.join(this.promiseScreenshotsDir, `${screenshotId}_metadata.json`);
+      const metadata = {
+        screenshotId,
+        timestamp: new Date().toISOString(),
+        originalFilename: sourceFilename,
+        promiseFilename: promiseFilename,
+        promises: promises.map(p => ({
+          content: p.content,
+          to_whom: p.to_whom,
+          deadline: p.deadline
+        })),
+        promiseCount: promises.length
+      };
+      
+      fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+      
+      console.log(`Saved promise screenshot: ${promisePath}`);
+      console.log(`Saved metadata: ${metadataPath}`);
+      
+      return promisePath;
+    } catch (error) {
+      console.error('Failed to save promise screenshot:', error);
+      return '';
+    }
+  }
+
+  private showPromiseFoundNotification(count: number) {
+    if (Notification.isSupported()) {
+      const notification = new Notification({
+        title: 'Promise Keeper',
+        body: `Found ${count} promise${count > 1 ? 's' : ''} in your screen!`,
+        silent: false,
+        icon: createTrayIcon() // Use the same icon as tray
+      });
+
+      notification.on('click', () => {
+        this.showWindow();
+      });
+
+      notification.show();
+    }
   }
 
   private cleanupScreenshots() {
@@ -258,6 +356,30 @@ class PromiseKeeperApp {
       const files = fs.readdirSync(this.screenshotDir).filter(f => f.endsWith('.png')).map(f => ({ name: f, time: fs.statSync(path.join(this.screenshotDir, f)).mtime })).sort((a, b) => b.time.getTime() - a.time.getTime());
       files.slice(100).forEach(f => fs.unlinkSync(path.join(this.screenshotDir, f.name)));
     } catch (err) { console.error('Cleanup failed:', err); }
+  }
+
+  private getScreenshotPath(screenshotId: string): string {
+    try {
+      const promiseFilename = `${screenshotId}_promises.png`;
+      const promisePath = path.join(this.promiseScreenshotsDir, promiseFilename);
+      
+      if (fs.existsSync(promisePath)) {
+        return promisePath;
+      }
+      
+      // Fallback to regular screenshot if promise screenshot doesn't exist
+      const regularFilename = `${screenshotId}.png`;
+      const regularPath = path.join(this.screenshotDir, regularFilename);
+      
+      if (fs.existsSync(regularPath)) {
+        return regularPath;
+      }
+      
+      return '';
+    } catch (error) {
+      console.error('Failed to get screenshot path:', error);
+      return '';
+    }
   }
 }
 

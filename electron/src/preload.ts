@@ -28,12 +28,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // File operations
   files: {
-    showFilePicker: () => ipcRenderer.invoke('show-file-picker')
+    showFilePicker: () => ipcRenderer.invoke('show-file-picker'),
+    openScreenshot: (screenshotId: string) => ipcRenderer.invoke('open-screenshot', screenshotId)
+  },
+
+  // Screenshot operations
+  screenshots: {
+    savePromiseScreenshot: (screenshotId: string, promises: any[]) => 
+      ipcRenderer.invoke('save-promise-screenshot', { screenshotId, promises }),
+    getScreenshotPath: (screenshotId: string) =>
+      ipcRenderer.invoke('get-screenshot-path', screenshotId)
   },
 
   // Listen for events from main process
   onFocusInput: (callback: () => void) => {
     ipcRenderer.on('focus-input', callback);
+  },
+
+  // Listen for screenshot processing requests from main process
+  onProcessScreenshotForPromises: (callback: (data: any) => void) => {
+    ipcRenderer.on('process-screenshot-for-promises', (_, data) => callback(data));
   },
 
   // Remove listeners
@@ -62,8 +76,14 @@ export interface ElectronAPI {
   };
   files: {
     showFilePicker: () => Promise<string | null>;
+    openScreenshot: (screenshotId: string) => Promise<void>;
+  };
+  screenshots: {
+    savePromiseScreenshot: (screenshotId: string, promises: any[]) => Promise<string>;
+    getScreenshotPath: (screenshotId: string) => Promise<string>;
   };
   onFocusInput: (callback: () => void) => void;
+  onProcessScreenshotForPromises: (callback: (data: any) => void) => void;
   removeAllListeners: (channel: string) => void;
 }
 

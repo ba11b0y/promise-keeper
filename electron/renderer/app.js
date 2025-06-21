@@ -96,6 +96,11 @@ class PromiseKeeperApp {
                     input.focus();
                 }
             });
+
+            // Listen for screenshot processing requests from main process
+            window.electronAPI.onProcessScreenshotForPromises((data) => {
+                this.processScreenshotForPromises(data);
+            });
         }
     }
 
@@ -489,29 +494,172 @@ class PromiseKeeperApp {
 
     renderPromises() {
         const container = document.getElementById('promisesList');
-        const loading = document.getElementById('promisesLoading');
         
         if (this.promises.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>No promises yet</h3>
-                    <p>Add your first promise above to get started!</p>
-                </div>
-            `;
+            container.innerHTML = '<div class="no-promises">No promises yet. Add your first promise above!</div>';
             return;
         }
 
-        const promisesHTML = this.promises.map(promise => `
-            <div class="promise-item">
-                <div class="promise-content">${this.escapeHtml(promise.content)}</div>
-                <div class="promise-meta">
-                    <span class="promise-date">${this.formatDate(promise.created_at)}</span>
-                    <button class="promise-delete" onclick="app.deletePromise(${promise.id})">Delete</button>
+        container.innerHTML = this.promises.map(promise => {
+            const isFromScreenshot = promise.extracted_from_screenshot && promise.screenshot_id;
+            const screenshotIndicator = isFromScreenshot ? 
+                `<span class="screenshot-indicator" onclick="app.viewScreenshot('${promise.screenshot_id}')" title="Click to view source screenshot">
+                    📸 From screenshot
+                </span>` : '';
+            
+            return `
+                <div class="promise-item ${isFromScreenshot ? 'from-screenshot' : ''}">
+                    <div class="promise-content">${this.escapeHtml(promise.content)}</div>
+                    <div class="promise-meta">
+                        <span class="promise-date">${this.formatDate(promise.created_at)}</span>
+                        ${screenshotIndicator}
+                        <button class="delete-btn" onclick="app.deletePromise(${promise.id})">×</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async viewScreenshot(screenshotId) {
+        try {
+            const screenshotPath = await window.electronAPI.screenshots.getScreenshotPath(screenshotId);
+            
+            if (!screenshotPath) {
+                console.error('Screenshot not found:', screenshotId);
+                return;
+            }
+
+            this.showScreenshotModal(screenshotPath, screenshotId);
+        } catch (error) {
+            console.error('Error viewing screenshot:', error);
+        }
+    }
+
+    showScreenshotModal(screenshotPath, screenshotId) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'screenshot-modal';
+        modal.innerHTML = `
+            <div class="screenshot-modal-overlay" onclick="this.parentElement.remove()">
+                <div class="screenshot-modal-content" onclick="event.stopPropagation()">
+                    <div class="screenshot-modal-header">
+                        <h3>Promise Screenshot</h3>
+                        <button class="close-btn" onclick="this.closest('.screenshot-modal').remove()">×</button>
+                    </div>
+                    <div class="screenshot-modal-body">
+                        <img src="file://${screenshotPath}" alt="Promise Screenshot" style="max-width: 100%; max-height: 70vh; border-radius: 8px;" />
+                        <p style="margin-top: 12px; color: #666; font-size: 12px;">
+                            Screenshot ID: ${screenshotId}<br>
+                            Path: ${screenshotPath}
+                        </p>
+                    </div>
                 </div>
             </div>
-        `).join('');
+        `;
 
-        container.innerHTML = promisesHTML;
+        document.body.appendChild(modal);
+
+        // Add modal styles
+        if (!document.getElementById('screenshot-modal-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'screenshot-modal-styles';
+            styles.textContent = `
+                .screenshot-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 10000;
+                }
+                
+                .screenshot-modal-overlay {
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                }
+                
+                .screenshot-modal-content {
+                    background: white;
+                    border-radius: 12px;
+                    max-width: 90vw;
+                    max-height: 90vh;
+                    overflow: auto;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                }
+                
+                .screenshot-modal-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #eee;
+                    background: #f8f9fa;
+                    border-radius: 12px 12px 0 0;
+                }
+                
+                .screenshot-modal-header h3 {
+                    margin: 0;
+                    color: #333;
+                }
+                
+                .close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    padding: 0;
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 6px;
+                    color: #666;
+                }
+                
+                .close-btn:hover {
+                    background: #e9ecef;
+                    color: #333;
+                }
+                
+                .screenshot-modal-body {
+                    padding: 20px;
+                    text-align: center;
+                }
+                
+                .promise-item.from-screenshot {
+                    border-left: 4px solid #4CAF50;
+                    background: #f8fff8;
+                }
+                
+                .screenshot-indicator {
+                    color: #4CAF50;
+                    font-size: 12px;
+                    cursor: pointer;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    background: rgba(76, 175, 80, 0.1);
+                    margin-left: 8px;
+                }
+                
+                .screenshot-indicator:hover {
+                    background: rgba(76, 175, 80, 0.2);
+                }
+                
+                .promise-meta {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 8px;
+                }
+            `;
+            document.head.appendChild(styles);
+        }
     }
 
     showLoginPage() {
@@ -589,10 +737,193 @@ class PromiseKeeperApp {
         const date = new Date(dateString);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     }
+
+    async processScreenshotForPromises(data) {
+        if (!this.currentUser) {
+            console.log('Screenshot promise processing skipped: user not logged in');
+            return;
+        }
+
+        try {
+            console.log('Processing screenshot for promises...', data.screenshotId);
+
+            // Convert buffer to Blob
+            const uint8Array = new Uint8Array(data.buffer);
+            const blob = new Blob([uint8Array], { type: 'image/png' });
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', blob, data.filename);
+
+            // Call the API using the existing configuration
+            const apiResponse = await fetch(API_CONFIG.getUrl(API_CONFIG.endpoints.extractPromisesFile), {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await apiResponse.json();
+
+            if (apiResponse.ok && result.promises && result.promises.length > 0) {
+                console.log('Found promises in screenshot:', result.promises);
+                
+                // Save the screenshot permanently since it contains promises
+                const savedScreenshotPath = await window.electronAPI.screenshots.savePromiseScreenshot(
+                    data.screenshotId, 
+                    result.promises
+                );
+                
+                console.log('Promise screenshot saved to:', savedScreenshotPath);
+                
+                // Create promises automatically with screenshot reference
+                const createdPromises = [];
+                for (const promise of result.promises) {
+                    const createdPromise = await this.createPromiseFromExtraction(promise, data.screenshotId, data.timestamp);
+                    if (createdPromise) {
+                        createdPromises.push(createdPromise);
+                    }
+                }
+
+                // Show notification through main process
+                if (window.electronAPI?.notifications) {
+                    window.electronAPI.notifications.show(
+                        'Promise Keeper',
+                        `Found ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''} in your screen!`
+                    );
+                }
+
+                // Show enhanced indicator with screenshot info
+                this.showAutoPromiseCreatedIndicator(createdPromises, data.screenshotId);
+            } else if (!apiResponse.ok) {
+                console.error('API error processing screenshot:', result);
+            }
+        } catch (error) {
+            console.error('Error processing screenshot for promises:', error);
+        }
+    }
+
+    async createPromiseFromExtraction(promise, screenshotId, timestamp) {
+        try {
+            // Extract promise content
+            let content = '';
+            if (typeof promise === 'string') {
+                content = promise;
+            } else if (promise.content) {
+                content = promise.content;
+            } else if (promise.text) {
+                content = promise.text;
+            } else {
+                content = JSON.stringify(promise);
+            }
+
+            if (!content.trim()) return null;
+
+            // Create enhanced content with additional details if available
+            if (promise.to_whom) {
+                content += ` (to ${promise.to_whom})`;
+            }
+            if (promise.deadline) {
+                content += ` (by ${promise.deadline})`;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('promises')
+                .insert([
+                    {
+                        content: content.trim(),
+                        owner_id: this.currentUser.id,
+                        // Add screenshot metadata
+                        screenshot_id: screenshotId,
+                        screenshot_timestamp: new Date(timestamp).toISOString(),
+                        extracted_from_screenshot: true,
+                        extraction_data: JSON.stringify({
+                            original_promise: promise,
+                            to_whom: promise.to_whom,
+                            deadline: promise.deadline
+                        })
+                    }
+                ])
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Failed to auto-create promise:', error);
+                return null;
+            } else {
+                console.log('Auto-created promise successfully:', data);
+                
+                // Add to local promises list
+                this.promises.unshift(data);
+                this.renderPromises();
+
+                return data;
+            }
+        } catch (error) {
+            console.error('Error creating promise from extraction:', error);
+            return null;
+        }
+    }
+
+    showAutoPromiseCreatedIndicator(createdPromises, screenshotId) {
+        if (!createdPromises || createdPromises.length === 0) return;
+
+        // Create a temporary indicator showing the auto-created promises
+        const indicator = document.createElement('div');
+        indicator.className = 'auto-promise-indicator';
+        
+        const promisesList = createdPromises.map(p => 
+            p.content.length > 50 ? p.content.substring(0, 50) + '...' : p.content
+        ).join('<br>• ');
+
+        indicator.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 1000;
+                max-width: 320px;
+                font-size: 14px;
+                opacity: 0;
+                transform: translateY(-20px);
+                transition: all 0.3s ease;
+            ">
+                <strong>✅ ${createdPromises.length} Promise${createdPromises.length > 1 ? 's' : ''} Auto-Created</strong><br>
+                <span style="font-size: 12px; opacity: 0.9;">• ${promisesList}</span><br>
+                <span style="font-size: 10px; opacity: 0.7; margin-top: 4px; display: block;">
+                    📸 From screenshot: ${screenshotId}
+                </span>
+            </div>
+        `;
+        
+        document.body.appendChild(indicator);
+        
+        // Animate in
+        setTimeout(() => {
+            const indicatorEl = indicator.firstElementChild;
+            indicatorEl.style.opacity = '1';
+            indicatorEl.style.transform = 'translateY(0)';
+        }, 100);
+        
+        // Remove after 6 seconds (longer since there's more info)
+        setTimeout(() => {
+            const indicatorEl = indicator.firstElementChild;
+            indicatorEl.style.opacity = '0';
+            indicatorEl.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.parentNode.removeChild(indicator);
+                }
+            }, 300);
+        }, 6000);
+    }
 }
 
-// Initialize the app
+// Create and start the app
 const app = new PromiseKeeperApp();
 
-// Make app available globally for button handlers
+// Make app globally accessible for onclick handlers
 window.app = app; 
