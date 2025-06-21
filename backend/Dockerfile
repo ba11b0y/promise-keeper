@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Generate BAML client (environment variables not needed at build time for generation)
+RUN baml-cli generate
+
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
 USER app

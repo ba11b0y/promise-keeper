@@ -20,6 +20,8 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
+Add LLAMA_API_KEY to the env
+
 4. Run the development server:
 ```bash
 uvicorn main:app --reload
