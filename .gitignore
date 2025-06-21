@@ -29,3 +29,5 @@ Carthage/Build/
 *.log
 .vscode/
 .idea/ 
+
+apple-mcp/

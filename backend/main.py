@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import os
 import base64
 import json
+import logging
 from typing import Optional, Union, Dict, Any
 from dotenv import load_dotenv
 from baml_client import b
@@ -23,6 +24,10 @@ from supabase_config import supabase_config
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Promise Keeper API",
@@ -111,6 +116,14 @@ async def extract_promises_from_file(file: UploadFile = File(...)):
         # Extract promises using BAML
         promises = b.ExtractPromises(baml_image)
         
+        # Log reasoning information
+        if promises.reason_for_no_promises:
+            logger.info(f"Reason for no promises: {promises.reason_for_no_promises}")
+        
+        for i, promise in enumerate(promises.promises):
+            if promise.reasoning:
+                logger.info(f"Promise {i+1} reasoning: {promise.reasoning}")
+        
         return PromiseListResponse(promises=[
             {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
             for p in promises.promises
@@ -142,6 +155,14 @@ async def extract_promises_from_base64(request: ImageBase64Request):
         # Extract promises using BAML
         promises = b.ExtractPromises(baml_image)
         
+        # Log reasoning information
+        if promises.reason_for_no_promises:
+            logger.info(f"Reason for no promises: {promises.reason_for_no_promises}")
+        
+        for i, promise in enumerate(promises.promises):
+            if promise.reasoning:
+                logger.info(f"Promise {i+1} reasoning: {promise.reasoning}")
+        
         return PromiseListResponse(promises=[
             {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
             for p in promises.promises
@@ -167,7 +188,13 @@ async def map_request_to_promise(file: UploadFile = File(...)):
         # Extract promises using BAML
         promises = b.ExtractPromises(baml_image)
         
+        # Log reasoning information
+        if promises.reason_for_no_promises:
+            logger.info(f"Legacy endpoint - Reason for no promises: {promises.reason_for_no_promises}")
+        
         if promises.promises:
+            if promises.promises[0].reasoning:
+                logger.info(f"Legacy endpoint - Promise reasoning: {promises.promises[0].reasoning}")
             return BasicPromiseResponse(promise=promises.promises[0].content)
         else:
             return BasicPromiseResponse(promise="No promises found in the image")
@@ -215,10 +242,29 @@ async def extract_promises_from_file_authenticated(
         baml_image = baml_py.Image.from_base64(media_type, image_base64)
         
         # Extract promises using BAML
-        promises = b.ExtractPromises(baml_image)
+        from baml_client.types import PromiseListResponse as BAMLPromiseListResponse, NoPromisesFoundResponse
+        
+        rawPromiseOutput = b.ExtractPromises(baml_image)
+        
+        user_id = current_user.get("user_id", current_user.get("sub", ""))
+        
+        # Handle both response types
+        if isinstance(rawPromiseOutput, NoPromisesFoundResponse):
+            logger.info(f"Auth endpoint - User {user_id} - No promises found. Reason: {rawPromiseOutput.reason}")
+            return PromiseListResponse(promises=[])
+        
+        # Handle PromiseListResponse
+        if isinstance(rawPromiseOutput, BAMLPromiseListResponse):
+            logger.info(f"Auth endpoint - User {user_id} - Found {len(rawPromiseOutput.promises)} promises")
+            
+            # Log reasoning information for each promise
+            for i, promise in enumerate(rawPromiseOutput.promises):
+                if promise.reasoning:
+                    logger.info(f"Auth endpoint - User {user_id} - Promise {i+1} reasoning: {promise.reasoning}")
+        
+        promises = rawPromiseOutput
         
         # Save promises to database for authenticated user
-        user_id = current_user.get("user_id", current_user.get("sub", ""))
         saved_promises = []
         
         for promise in promises.promises:
