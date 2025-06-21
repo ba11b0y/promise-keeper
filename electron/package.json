@@ -1,0 +1,46 @@
+{
+  "name": "promise-keeper",
+  "version": "1.0.0",
+  "description": "A simple promise tracking app with Supabase integration",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && electron .",
+    "dev": "tsc && electron . --dev",
+    "watch": "tsc -w",
+    "package": "electron-builder"
+  },
+  "keywords": ["electron", "promises", "todo", "supabase"],
+  "author": "Promise Keeper",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "electron": "^27.0.0",
+    "electron-builder": "^24.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "electron-store": "^8.1.0"
+  },
+  "build": {
+    "appId": "com.promisekeeper.app",
+    "productName": "Promise Keeper",
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+} 
