@@ -29,7 +29,7 @@ class PromiseKeeperApp {
             this.showPromiseSection();
             await this.loadPromises();
         } else {
-            this.showAuthSection();
+            this.showLoginPage();
         }
 
         this.setupEventListeners();
@@ -39,8 +39,12 @@ class PromiseKeeperApp {
     setupEventListeners() {
         // Auth form handlers
         document.getElementById('loginBtn').addEventListener('click', () => this.handleLogin());
-        document.getElementById('signupBtn').addEventListener('click', () => this.handleSignup());
+        document.getElementById('registerBtn').addEventListener('click', () => this.handleRegister());
         document.getElementById('logoutBtn').addEventListener('click', () => this.handleLogout());
+
+        // Navigation between login and register
+        document.getElementById('showRegisterBtn').addEventListener('click', () => this.showRegisterPage());
+        document.getElementById('showLoginBtn').addEventListener('click', () => this.showLoginPage());
 
         // Promise form handlers
         document.getElementById('addPromiseBtn').addEventListener('click', () => this.addPromise());
@@ -52,9 +56,15 @@ class PromiseKeeperApp {
         });
 
         // Auth form enter key handling
-        document.getElementById('password').addEventListener('keydown', (e) => {
+        document.getElementById('loginPassword').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 this.handleLogin();
+            }
+        });
+
+        document.getElementById('confirmPassword').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                this.handleRegister();
             }
         });
     }
@@ -72,15 +82,15 @@ class PromiseKeeperApp {
     }
 
     async handleLogin() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
 
         if (!email || !password) {
-            this.showMessage('Please enter both email and password', 'error');
+            this.showLoginMessage('Please enter both email and password', 'error');
             return;
         }
 
-        this.showMessage('Signing in...', 'loading');
+        this.showLoginMessage('Signing in...', 'loading');
 
         try {
             console.log('Attempting login with:', { email });
@@ -97,44 +107,51 @@ class PromiseKeeperApp {
 
             if (error) {
                 console.error('Login error:', error);
-                this.showMessage(error.message, 'error');
+                this.showLoginMessage(error.message, 'error');
             } else if (data.user) {
                 console.log('Login successful:', data.user);
                 this.currentUser = data.user;
-                this.showMessage('Welcome back!', 'success');
+                this.showLoginMessage('Welcome back!', 'success');
                 setTimeout(() => {
                     this.showPromiseSection();
                     this.loadPromises();
                 }, 1000);
             } else {
-                this.showMessage('Login failed - no user returned', 'error');
+                this.showLoginMessage('Login failed - no user returned', 'error');
             }
         } catch (err) {
             console.error('Login exception:', err);
-            this.showMessage('Login failed: ' + err.message, 'error');
+            this.showLoginMessage('Login failed: ' + err.message, 'error');
         }
     }
 
-    async handleSignup() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+    async handleRegister() {
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
 
-        if (!email || !password) {
-            this.showMessage('Please enter both email and password', 'error');
+        if (!email || !password || !confirmPassword) {
+            this.showRegisterMessage('Please fill in all fields', 'error');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            this.showRegisterMessage('Passwords do not match', 'error');
             return;
         }
 
         if (password.length < 6) {
-            this.showMessage('Password must be at least 6 characters', 'error');
+            this.showRegisterMessage('Password must be at least 6 characters', 'error');
             return;
         }
 
-        this.showMessage('Creating account...', 'loading');
+        this.showRegisterMessage('Creating account...', 'loading');
 
         try {
-            console.log('Attempting signup with:', { email });
+            console.log('Attempting registration with:', { email });
             
-            const { data, error } = await supabaseClient.auth.signUp({
+            // Sign up the user
+            const { data: signupData, error: signupError } = await supabaseClient.auth.signUp({
                 email,
                 password,
                 options: {
@@ -142,23 +159,43 @@ class PromiseKeeperApp {
                 }
             });
 
-            console.log('Signup response:', { data, error });
+            console.log('Signup response:', { signupData, signupError });
 
-            if (error) {
-                console.error('Signup error:', error);
-                this.showMessage(error.message, 'error');
-            } else {
-                if (data.user && !data.user.email_confirmed_at) {
-                    this.showMessage('Account created! Please check your email for verification, then sign in.', 'success');
-                } else if (data.user) {
-                    this.showMessage('Account created and verified! You can now sign in.', 'success');
-                } else {
-                    this.showMessage('Account creation completed.', 'success');
-                }
+            if (signupError) {
+                console.error('Signup error:', signupError);
+                this.showRegisterMessage(signupError.message, 'error');
+                return;
+            }
+
+            // If signup was successful, immediately sign in
+            if (signupData.user) {
+                this.showRegisterMessage('Account created! Signing you in...', 'success');
+                
+                // Wait a moment then sign in
+                setTimeout(async () => {
+                    const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({
+                        email,
+                        password,
+                        options: {
+                            skipBrowserRedirect: true
+                        }
+                    });
+
+                    if (loginError) {
+                        console.error('Auto-login error:', loginError);
+                        this.showRegisterMessage('Account created but auto-login failed. Please sign in manually.', 'error');
+                        setTimeout(() => this.showLoginPage(), 2000);
+                    } else if (loginData.user) {
+                        console.log('Auto-login successful:', loginData.user);
+                        this.currentUser = loginData.user;
+                        this.showPromiseSection();
+                        this.loadPromises();
+                    }
+                }, 1000);
             }
         } catch (err) {
-            console.error('Signup exception:', err);
-            this.showMessage('Signup failed: ' + err.message, 'error');
+            console.error('Registration exception:', err);
+            this.showRegisterMessage('Registration failed: ' + err.message, 'error');
         }
     }
 
@@ -166,11 +203,11 @@ class PromiseKeeperApp {
         const { error } = await supabaseClient.auth.signOut();
         
         if (error) {
-            this.showMessage(error.message, 'error');
+            this.showLoginMessage(error.message, 'error');
         } else {
             this.currentUser = null;
             this.promises = [];
-            this.showAuthSection();
+            this.showLoginPage();
         }
     }
 
@@ -183,7 +220,7 @@ class PromiseKeeperApp {
         }
 
         if (!this.currentUser) {
-            this.showMessage('Please log in first', 'error');
+            this.showLoginMessage('Please log in first', 'error');
             return;
         }
 
@@ -199,7 +236,7 @@ class PromiseKeeperApp {
             .single();
 
         if (error) {
-            this.showMessage('Failed to add promise: ' + error.message, 'error');
+            this.showLoginMessage('Failed to add promise: ' + error.message, 'error');
         } else {
             input.value = '';
             this.promises.unshift(data);
@@ -214,7 +251,7 @@ class PromiseKeeperApp {
             .eq('id', id);
 
         if (error) {
-            this.showMessage('Failed to delete promise: ' + error.message, 'error');
+            this.showLoginMessage('Failed to delete promise: ' + error.message, 'error');
         } else {
             this.promises = this.promises.filter(p => p.id !== id);
             this.renderPromises();
@@ -235,7 +272,7 @@ class PromiseKeeperApp {
         document.getElementById('promisesLoading').style.display = 'none';
 
         if (error) {
-            this.showMessage('Failed to load promises: ' + error.message, 'error');
+            this.showLoginMessage('Failed to load promises: ' + error.message, 'error');
         } else {
             this.promises = data || [];
             this.renderPromises();
@@ -269,19 +306,34 @@ class PromiseKeeperApp {
         container.innerHTML = promisesHTML;
     }
 
-    showAuthSection() {
-        document.getElementById('authSection').style.display = 'block';
+    showLoginPage() {
+        document.getElementById('loginSection').style.display = 'block';
+        document.getElementById('registerSection').style.display = 'none';
         document.getElementById('promiseSection').style.display = 'none';
         document.getElementById('userInfo').style.display = 'none';
         
         // Clear form
-        document.getElementById('email').value = '';
-        document.getElementById('password').value = '';
-        this.clearMessages();
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        this.clearLoginMessages();
+    }
+
+    showRegisterPage() {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('registerSection').style.display = 'block';
+        document.getElementById('promiseSection').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'none';
+        
+        // Clear form
+        document.getElementById('registerEmail').value = '';
+        document.getElementById('registerPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        this.clearRegisterMessages();
     }
 
     showPromiseSection() {
-        document.getElementById('authSection').style.display = 'none';
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('registerSection').style.display = 'none';
         document.getElementById('promiseSection').style.display = 'flex';
         document.getElementById('userInfo').style.display = 'block';
         
@@ -289,18 +341,32 @@ class PromiseKeeperApp {
             document.getElementById('userEmail').textContent = this.currentUser.email;
         }
         
-        this.clearMessages();
+        this.clearLoginMessages();
+        this.clearRegisterMessages();
     }
 
-    showMessage(message, type = 'info') {
-        const messageDiv = document.getElementById('authMessage');
+    showLoginMessage(message, type = 'info') {
+        const messageDiv = document.getElementById('loginMessage');
         messageDiv.className = type;
         messageDiv.textContent = message;
         messageDiv.style.display = 'block';
     }
 
-    clearMessages() {
-        const messageDiv = document.getElementById('authMessage');
+    showRegisterMessage(message, type = 'info') {
+        const messageDiv = document.getElementById('registerMessage');
+        messageDiv.className = type;
+        messageDiv.textContent = message;
+        messageDiv.style.display = 'block';
+    }
+
+    clearLoginMessages() {
+        const messageDiv = document.getElementById('loginMessage');
+        messageDiv.style.display = 'none';
+        messageDiv.textContent = '';
+    }
+
+    clearRegisterMessages() {
+        const messageDiv = document.getElementById('registerMessage');
         messageDiv.style.display = 'none';
         messageDiv.textContent = '';
     }
