@@ -11,6 +11,9 @@ enum SidebarPane {
     case helloWorld
     case whatsUp
     
+    // MARK: Notifications Section
+    case notifications
+    
     // MARK: More Section
     
     case moreStuff

@@ -57,6 +57,9 @@
 		50000001000000000000000A /* Promise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50000001000000000000000B /* Promise.swift */; };
 		50000001000000000000000C /* PromiseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50000001000000000000000D /* PromiseManager.swift */; };
 		50000001000000000000000E /* PromisesPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50000001000000000000000F /* PromisesPane.swift */; };
+		B7E076A82E073E3B0003AE17 /* NotifcationsSidebarSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E076A72E073E3B0003AE17 /* NotifcationsSidebarSection.swift */; };
+		B7E076AB2E073EAE0003AE17 /* NotificationsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E076AA2E073EAE0003AE17 /* NotificationsPane.swift */; };
+		B7E076AD2E073ED30003AE17 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E076AC2E073ED30003AE17 /* NotificationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -106,6 +109,9 @@
 		50000001000000000000000B /* Promise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promise.swift; sourceTree = "<group>"; };
 		50000001000000000000000D /* PromiseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromiseManager.swift; sourceTree = "<group>"; };
 		50000001000000000000000F /* PromisesPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromisesPane.swift; sourceTree = "<group>"; };
+		B7E076A72E073E3B0003AE17 /* NotifcationsSidebarSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotifcationsSidebarSection.swift; sourceTree = "<group>"; };
+		B7E076AA2E073EAE0003AE17 /* NotificationsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationsPane.swift; path = SidebarApp/Panes/NotificationsPane.swift; sourceTree = SOURCE_ROOT; };
+		B7E076AC2E073ED30003AE17 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -231,6 +237,8 @@
 		4180AED528397F8B0054FEA9 /* Sections */ = {
 			isa = PBXGroup;
 			children = (
+				B7E076A72E073E3B0003AE17 /* NotifcationsSidebarSection.swift */,
+				B7E076AA2E073EAE0003AE17 /* NotificationsPane.swift */,
 				4180AED128397F100054FEA9 /* GeneralSidebarSection.swift */,
 				4180AED6283980560054FEA9 /* MoreSidebarSection.swift */,
 			);
@@ -266,6 +274,7 @@
 		4180AEEC2839A0560054FEA9 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				B7E076AC2E073ED30003AE17 /* NotificationManager.swift */,
 				4180AEF62839A13A0054FEA9 /* AppKit Extensions */,
 				4180AEEF2839A0720054FEA9 /* Bundle Extensions */,
 				4180AF062839AF320054FEA9 /* WindowReflection.swift */,
@@ -430,6 +439,7 @@
 				4180AF092839B0870054FEA9 /* AlwaysOnTop.swift in Sources */,
 				4180AEC4283979530054FEA9 /* MainView.swift in Sources */,
 				4180AEE328398FE50054FEA9 /* Pane.swift in Sources */,
+				B7E076A82E073E3B0003AE17 /* NotifcationsSidebarSection.swift in Sources */,
 				4180AF11283A50770054FEA9 /* MenuBarPopup.swift in Sources */,
 				4180AEC7283979FA0054FEA9 /* Sidebar.swift in Sources */,
 				25D4AD8C2E07339900F48470 /* UserProfileView.swift in Sources */,
@@ -449,9 +459,11 @@
 				4180AEF32839A0950054FEA9 /* Bundle+Copyright.swift in Sources */,
 				4180AED028397DB00054FEA9 /* MoreStuffPane.swift in Sources */,
 				4180AEC0283976740054FEA9 /* SettingsWindow.swift in Sources */,
+				B7E076AB2E073EAE0003AE17 /* NotificationsPane.swift in Sources */,
 				4180AED9283983150054FEA9 /* SidebarFooter.swift in Sources */,
 				4180AEFE2839A3B30054FEA9 /* AttributionsWindow.swift in Sources */,
 				4180AEE728399E160054FEA9 /* MyCommands.swift in Sources */,
+				B7E076AD2E073ED30003AE17 /* NotificationManager.swift in Sources */,
 				4180AEEB2839A0280054FEA9 /* AboutCommand.swift in Sources */,
 				4180AED228397F100054FEA9 /* GeneralSidebarSection.swift in Sources */,
 				4180AEAE2839753E0054FEA9 /* SidebarApp.swift in Sources */,
@@ -598,9 +610,9 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs access to the camera to capture video.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to the microphone to record audio.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs access to the camera to capture video.";
 				INFOPLIST_KEY_NSScreenCaptureDescription = "This app needs screen recording access to capture screen content.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -631,9 +643,9 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs access to the camera to capture video.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to the microphone to record audio.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs access to the camera to capture video.";
 				INFOPLIST_KEY_NSScreenCaptureDescription = "This app needs screen recording access to capture screen content.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

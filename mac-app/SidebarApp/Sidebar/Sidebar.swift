@@ -15,6 +15,7 @@ struct Sidebar: View {
     var body: some View {
         List {
             GeneralSidebarSection(selection: $selection)
+            NotificationsSidebarSection(selection: $selection)
             MoreSidebarSection(selection: $selection)
             
             // User Profile Section
