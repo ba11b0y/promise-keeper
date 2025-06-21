@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, desktopCapturer, dialog } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, desktopCapturer, dialog, globalShortcut } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -6,6 +6,7 @@ import Store from 'electron-store';
 import { createTrayIcon } from './create-tray-icon';
 import * as dotenv from 'dotenv';
 import { mcpClient } from './services/mcp-client';
+import { NotificationManager } from './services/notification-manager';
 
 // Load environment variables from .env.local file
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
@@ -20,8 +21,10 @@ class PromiseKeeperApp {
   private promiseScreenshotsDir = path.join(os.homedir(), 'Documents', 'PromiseKeeper', 'PromiseScreenshots');
   private screenshotInterval: NodeJS.Timeout | null = null;
   private apiBaseUrl = process.env.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-red-sunset-2072.fly.dev";
+  private notificationManager: NotificationManager;
 
   constructor() {
+    this.notificationManager = NotificationManager.getInstance();
     this.setupApp();
   }
 
@@ -34,6 +37,7 @@ class PromiseKeeperApp {
         this.createTray();
         this.setupIPC();
         this.startScreenshots();
+        this.setupGlobalShortcuts();
       } catch (error) {
         console.error('Failed to initialize app:', error);
       }
@@ -55,8 +59,30 @@ class PromiseKeeperApp {
     app.on('before-quit', async () => {
       this.isQuitting = true;
       if (this.screenshotInterval) clearInterval(this.screenshotInterval);
+      // Unregister all shortcuts
+      globalShortcut.unregisterAll();
       await mcpClient.cleanup();
     });
+  }
+
+  private setupGlobalShortcuts() {
+    // First unregister any existing shortcuts to avoid conflicts
+    globalShortcut.unregisterAll();
+
+    // Use Command+Shift+T on macOS, Control+Shift+T on Windows/Linux
+    const shortcutKey = process.platform === 'darwin' ? 'Command+Shift+T' : 'Control+Shift+T';
+
+    // Register the shortcut
+    const success = globalShortcut.register(shortcutKey, () => {
+      console.log('Notification shortcut pressed');
+      this.notificationManager.handleTabPress();
+    });
+
+    if (!success) {
+      console.error(`Failed to register ${shortcutKey} shortcut`);
+    } else {
+      console.log(`${shortcutKey} shortcut registered successfully`);
+    }
   }
 
   private createWindow() {
@@ -111,6 +137,11 @@ class PromiseKeeperApp {
     // Open DevTools in development
     if (process.argv.includes('--dev')) {
       this.mainWindow.webContents.openDevTools();
+    }
+
+    // After window creation
+    if (this.mainWindow) {
+      this.notificationManager.setMainWindow(this.mainWindow);
     }
   }
 
@@ -210,19 +241,10 @@ class PromiseKeeperApp {
 
     // Handle notifications
     ipcMain.handle('show-notification', (_, { title, body }) => {
-      if (Notification.isSupported()) {
-        const notification = new Notification({
-          title,
-          body,
-          silent: false
-        });
-
-        notification.on('click', () => {
-          this.showWindow();
-        });
-
-        notification.show();
-      }
+      console.log('IPC: Showing notification:', { title, body });
+      this.notificationManager.showNotification(title, body, () => {
+        this.showWindow();
+      });
     });
 
     // Handle file picker
@@ -368,20 +390,16 @@ class PromiseKeeperApp {
   }
 
   private showPromiseFoundNotification(count: number) {
-    if (Notification.isSupported()) {
-      const notification = new Notification({
-        title: 'Promise Keeper',
-        body: `Found ${count} promise${count > 1 ? 's' : ''} in your screen!`,
-        silent: false,
-        icon: createTrayIcon() // Use the same icon as tray
-      });
+    console.log('Showing promise found notification for', count, 'promises');
 
-      notification.on('click', () => {
+    this.notificationManager.showNotification(
+      'Promise Keeper',
+      `Found ${count} promise${count > 1 ? 's' : ''} in your screen!`,
+      () => {
+        console.log('Notification clicked, showing window');
         this.showWindow();
-      });
-
-      notification.show();
-    }
+      }
+    );
   }
 
   private cleanupScreenshots() {
