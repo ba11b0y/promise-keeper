@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
+from baml_client import b
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +40,9 @@ class PromiseResponse(BaseModel):
     due_date: str
     status: str
 
+class BasicPromiseResponse(BaseModel):
+    promise: str
+
 # Routes
 @app.get("/")
 async def root():
@@ -50,6 +54,11 @@ async def health_check():
         status="healthy",
         message="API is running successfully"
     )
+
+@app.get('/map_request_to_promise', response_model=BasicPromiseResponse)
+async def map_request_to_promise(request: str):
+    promise = b.CreatePromise(request)
+    return BasicPromiseResponse(promise=promise.content)
 
 @app.get("/api/promises")
 async def get_promises():

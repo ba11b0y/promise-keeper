@@ -180,3 +180,5 @@ logs/
 # FastAPI specific
 .pytest_cache/
 instance/ 
+
+baml_client/
