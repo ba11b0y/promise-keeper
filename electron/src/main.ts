@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, globalShortcut } from 'electron';
 import * as path from 'path';
 import Store from 'electron-store';
 import { createTrayIcon } from './create-tray-icon';
@@ -9,6 +9,8 @@ class PromiseKeeperApp {
   private mainWindow: BrowserWindow | null = null;
   private tray: Tray | null = null;
   private isQuitting = false;
+  private hasActiveNotification = false;
+  private activeNotification: Notification | null = null;
 
   constructor() {
     this.setupApp();
@@ -20,6 +22,7 @@ class PromiseKeeperApp {
       this.createWindow();
       this.createTray();
       this.setupIPC();
+      this.setupGlobalShortcuts();
     });
 
     // Handle window close
@@ -37,6 +40,29 @@ class PromiseKeeperApp {
 
     app.on('before-quit', () => {
       this.isQuitting = true;
+      // Unregister all shortcuts
+      globalShortcut.unregisterAll();
+    });
+
+    app.on('will-quit', () => {
+      // Unregister all shortcuts
+      globalShortcut.unregisterAll();
+    });
+  }
+
+  private setupGlobalShortcuts() {
+    // Register Tab shortcut
+    globalShortcut.register('Tab', () => {
+      if (this.hasActiveNotification) {
+        // Close the notification if it exists
+        if (this.activeNotification) {
+          this.activeNotification.close();
+          this.activeNotification = null;
+        }
+        this.showWindow();
+        // Reset the active notification flag
+        this.hasActiveNotification = false;
+      }
     });
   }
 
@@ -86,43 +112,43 @@ class PromiseKeeperApp {
       this.tray = new Tray(trayIcon);
       console.log('System tray created successfully');
     
-    // Create tray menu
-    const contextMenu = Menu.buildFromTemplate([
-      {
-        label: 'Show Promise Keeper',
-        click: () => {
-          this.showWindow();
+      // Create tray menu
+      const contextMenu = Menu.buildFromTemplate([
+        {
+          label: 'Show Promise Keeper',
+          click: () => {
+            this.showWindow();
+          }
+        },
+        {
+          label: 'Add Promise',
+          click: () => {
+            this.showWindow();
+            this.mainWindow?.webContents.send('focus-input');
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Quit',
+          click: () => {
+            this.isQuitting = true;
+            app.quit();
+          }
         }
-      },
-      {
-        label: 'Add Promise',
-        click: () => {
-          this.showWindow();
-          this.mainWindow?.webContents.send('focus-input');
-        }
-      },
-      { type: 'separator' },
-      {
-        label: 'Quit',
-        click: () => {
-          this.isQuitting = true;
-          app.quit();
-        }
-      }
-    ]);
+      ]);
 
-    this.tray.setContextMenu(contextMenu);
-    this.tray.setToolTip('Promise Keeper');
+      this.tray.setContextMenu(contextMenu);
+      this.tray.setToolTip('Promise Keeper');
     
-            // Handle tray click
-        this.tray.on('click', () => {
-            this.toggleWindow();
-        });
+      // Handle tray click
+      this.tray.on('click', () => {
+        this.toggleWindow();
+      });
         
-        } catch (error) {
-            console.error('Failed to create system tray:', error);
-        }
+    } catch (error) {
+      console.error('Failed to create system tray:', error);
     }
+  }
 
   private showWindow() {
     if (this.mainWindow) {
@@ -175,14 +201,34 @@ class PromiseKeeperApp {
     // Handle notifications
     ipcMain.handle('show-notification', (_, { title, body }) => {
       if (Notification.isSupported()) {
+        // Close any existing notification
+        if (this.activeNotification) {
+          this.activeNotification.close();
+        }
+
         const notification = new Notification({
           title,
           body,
           silent: false
         });
 
+        // Store reference to active notification
+        this.activeNotification = notification;
+
+        // Set active notification flag
+        this.hasActiveNotification = true;
+
+        // Handle notification close
+        notification.on('close', () => {
+          this.hasActiveNotification = false;
+          this.activeNotification = null;
+        });
+
+        // Handle notification click
         notification.on('click', () => {
           this.showWindow();
+          this.hasActiveNotification = false;
+          this.activeNotification = null;
         });
 
         notification.show();
