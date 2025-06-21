@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, desktopCapturer } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, desktopCapturer, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -210,6 +210,25 @@ class PromiseKeeperApp {
 
         notification.show();
       }
+    });
+
+    // Handle file picker
+    ipcMain.handle('show-file-picker', async () => {
+      if (!this.mainWindow) return null;
+      
+      const result = await dialog.showOpenDialog(this.mainWindow, {
+        properties: ['openFile'],
+        filters: [
+          { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return null;
+      }
+
+      return result.filePaths[0];
     });
   }
 

@@ -331,7 +331,11 @@
                     placeholder="What promise do you want to make today?"
                     rows="2"
                 ></textarea>
-                <button class="btn btn-primary" id="addPromiseBtn" style="margin-top: 10px;">Add Promise</button>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn btn-primary" id="addPromiseBtn">Add Promise</button>
+                    <button class="btn btn-secondary" id="uploadScreenshotBtn">Upload Screenshot</button>
+                </div>
+                <div id="uploadResult" style="margin-top: 10px; display: none;"></div>
             </div>
             
             <div class="promises-list" id="promisesList">

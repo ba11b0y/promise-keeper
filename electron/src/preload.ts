@@ -22,6 +22,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     show: (title: string, body: string) => ipcRenderer.invoke('show-notification', { title, body })
   },
 
+  // File operations
+  files: {
+    showFilePicker: () => ipcRenderer.invoke('show-file-picker')
+  },
+
   // Listen for events from main process
   onFocusInput: (callback: () => void) => {
     ipcRenderer.on('focus-input', callback);
@@ -47,6 +52,9 @@ export interface ElectronAPI {
   };
   notifications: {
     show: (title: string, body: string) => Promise<void>;
+  };
+  files: {
+    showFilePicker: () => Promise<string | null>;
   };
   onFocusInput: (callback: () => void) => void;
   removeAllListeners: (channel: string) => void;

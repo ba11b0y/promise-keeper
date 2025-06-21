@@ -48,6 +48,7 @@ class PromiseKeeperApp {
 
         // Promise form handlers
         document.getElementById('addPromiseBtn').addEventListener('click', () => this.addPromise());
+        document.getElementById('uploadScreenshotBtn').addEventListener('click', () => this.uploadScreenshot());
         document.getElementById('promiseInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -249,6 +250,96 @@ class PromiseKeeperApp {
                     `New promise: ${content}`
                 );
             }
+        }
+    }
+
+    async uploadScreenshot() {
+        if (!this.currentUser) {
+            this.showUploadMessage('Please log in first', 'error');
+            return;
+        }
+
+        // Show file picker
+        const filePath = await window.electronAPI.files.showFilePicker();
+        
+        if (!filePath) {
+            return; // User cancelled
+        }
+
+        this.showUploadMessage('Uploading screenshot...', 'loading');
+
+        try {
+            // Read the file
+            const response = await fetch(`file://${filePath}`);
+            const blob = await response.blob();
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', blob, 'screenshot.png');
+
+            // Call the API
+            const apiResponse = await fetch('https://promise-keeper-api-red-sunset-2072.fly.dev/extract_promises_file', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await apiResponse.json();
+
+            if (apiResponse.ok) {
+                console.log('API Response:', result); // Debug log to see the structure
+                this.showUploadMessage('Screenshot processed successfully!', 'success');
+                
+                // Display the extracted promises
+                if (result.promises && result.promises.length > 0) {
+                    // Extract text from promise objects
+                    const promiseTexts = result.promises.map(promise => {
+                        // Handle different possible response formats
+                        if (typeof promise === 'string') {
+                            return promise;
+                        } else if (promise.text) {
+                            return promise.text;
+                        } else if (promise.content) {
+                            return promise.content;
+                        } else if (promise.promise) {
+                            return promise.promise;
+                        } else {
+                            // Fallback: convert object to string or use first property
+                            return JSON.stringify(promise);
+                        }
+                    });
+
+                    let message = 'Extracted promises:\n';
+                    promiseTexts.forEach((promise, index) => {
+                        message += `${index + 1}. ${promise}\n`;
+                    });
+                    this.showUploadMessage(message, 'success');
+
+                    // Add the extracted promises to the input
+                    const input = document.getElementById('promiseInput');
+                    input.value = promiseTexts.join('\n');
+                } else {
+                    this.showUploadMessage('No promises found in the image.', 'info');
+                }
+            } else {
+                this.showUploadMessage(`Error: ${result.detail || 'Unknown error'}`, 'error');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.showUploadMessage(`Upload failed: ${error.message}`, 'error');
+        }
+    }
+
+    showUploadMessage(message, type = 'info') {
+        const messageDiv = document.getElementById('uploadResult');
+        messageDiv.className = type;
+        messageDiv.textContent = message;
+        messageDiv.style.display = 'block';
+        
+        // Auto-hide success and info messages after 5 seconds
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
         }
     }
 
