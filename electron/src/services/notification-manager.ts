@@ -1,5 +1,6 @@
 import { Notification, BrowserWindow } from 'electron';
 import { createTrayIcon } from '../create-tray-icon';
+import { NotificationProcessor } from './notification-processor';
 
 interface NotificationData {
     title: string;
@@ -13,9 +14,11 @@ export class NotificationManager {
     private activeNotification: Notification | null = null;
     private mainWindow: BrowserWindow | null = null;
     private notificationCount: number = 0;
+    private notificationProcessor: NotificationProcessor;
 
     private constructor() {
         console.log('NotificationManager initialized');
+        this.notificationProcessor = NotificationProcessor.getInstance();
     }
 
     public static getInstance(): NotificationManager {
@@ -29,7 +32,7 @@ export class NotificationManager {
         this.mainWindow = window;
     }
 
-    public showNotification(title: string, body: string, onClickCallback?: () => void): void {
+    public async showNotification(title: string, body: string, onClickCallback?: () => void): Promise<void> {
         if (!Notification.isSupported()) {
             console.log('Notifications not supported');
             return;
@@ -74,7 +77,7 @@ export class NotificationManager {
         this.activeNotification.show();
     }
 
-    public handleTabPress(): void {
+    public async handleTabPress(): Promise<void> {
         console.log('\n----------------------------------------');
         console.log('🔔 NOTIFICATION STATUS:');
         console.log(`Total notifications shown: ${this.notificationCount}`);
@@ -91,6 +94,12 @@ export class NotificationManager {
 
             console.log('✅ Last Notification:');
             console.table(formattedData);
+
+            // Process the notification when shortcut is pressed
+            await this.notificationProcessor.processNotification({
+                title: this.lastNotification.title,
+                body: this.lastNotification.body
+            });
 
             // Close the active notification if it exists
             if (this.activeNotification) {
