@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "applescript_execute": {
+            "command": "uv",
+            "args": [
+                "--directory",
+                "/Users/rahul/code/swift/promise-keeper/applescript-mcp",
+                "run",
+                "src/applescript_mcp/server.py"
+            ]
+        }
+    }
+}

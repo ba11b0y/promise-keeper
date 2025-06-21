@@ -40,6 +40,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('get-screenshot-path', screenshotId)
   },
 
+  // MCP operations
+  mcp: {
+    contacts: {
+      search: (name?: string) => ipcRenderer.invoke('mcp-contacts-search', name)
+    },
+    notes: {
+      create: (title: string, body: string, folderName?: string) =>
+        ipcRenderer.invoke('mcp-notes-create', { title, body, folderName })
+    },
+    messages: {
+      send: (phoneNumber: string, message: string) =>
+        ipcRenderer.invoke('mcp-messages-send', { phoneNumber, message })
+    },
+    calendar: {
+      search: (searchText: string) => ipcRenderer.invoke('mcp-calendar-search', searchText)
+    },
+    reminders: {
+      create: (name: string, listName?: string, notes?: string, dueDate?: string) =>
+        ipcRenderer.invoke('mcp-reminders-create', { name, listName, notes, dueDate })
+    }
+  },
+
   // Listen for events from main process
   onFocusInput: (callback: () => void) => {
     ipcRenderer.on('focus-input', callback);
@@ -81,6 +103,23 @@ export interface ElectronAPI {
   screenshots: {
     savePromiseScreenshot: (screenshotId: string, promises: any[]) => Promise<string>;
     getScreenshotPath: (screenshotId: string) => Promise<string>;
+  };
+  mcp: {
+    contacts: {
+      search: (name?: string) => Promise<any>;
+    };
+    notes: {
+      create: (title: string, body: string, folderName?: string) => Promise<any>;
+    };
+    messages: {
+      send: (phoneNumber: string, message: string) => Promise<any>;
+    };
+    calendar: {
+      search: (searchText: string) => Promise<any>;
+    };
+    reminders: {
+      create: (name: string, listName?: string, notes?: string, dueDate?: string) => Promise<any>;
+    };
   };
   onFocusInput: (callback: () => void) => void;
   onProcessScreenshotForPromises: (callback: (data: any) => void) => void;

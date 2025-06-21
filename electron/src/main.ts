@@ -5,6 +5,7 @@ import * as os from 'os';
 import Store from 'electron-store';
 import { createTrayIcon } from './create-tray-icon';
 import * as dotenv from 'dotenv';
+import { mcpClient } from './services/mcp-client';
 
 // Load environment variables from .env.local file
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
@@ -26,11 +27,16 @@ class PromiseKeeperApp {
 
   private setupApp() {
     // Handle app ready
-    app.whenReady().then(() => {
-      this.createWindow();
-      this.createTray();
-      this.setupIPC();
-      this.startScreenshots();
+    app.whenReady().then(async () => {
+      try {
+        await mcpClient.initialize();
+        this.createWindow();
+        this.createTray();
+        this.setupIPC();
+        this.startScreenshots();
+      } catch (error) {
+        console.error('Failed to initialize app:', error);
+      }
     });
 
     // Handle window close
@@ -46,9 +52,10 @@ class PromiseKeeperApp {
       }
     });
 
-    app.on('before-quit', () => {
+    app.on('before-quit', async () => {
       this.isQuitting = true;
       if (this.screenshotInterval) clearInterval(this.screenshotInterval);
+      await mcpClient.cleanup();
     });
   }
 
@@ -245,6 +252,27 @@ class PromiseKeeperApp {
     // Handle getting screenshot paths for viewing
     ipcMain.handle('get-screenshot-path', (_, screenshotId) => {
       return this.getScreenshotPath(screenshotId);
+    });
+
+    // Add MCP IPC handlers
+    ipcMain.handle('mcp-contacts-search', async (_, name?: string) => {
+      return mcpClient.searchContacts(name);
+    });
+
+    ipcMain.handle('mcp-notes-create', async (_, { title, body, folderName }: { title: string; body: string; folderName?: string }) => {
+      return mcpClient.createNote(title, body, folderName);
+    });
+
+    ipcMain.handle('mcp-messages-send', async (_, { phoneNumber, message }: { phoneNumber: string; message: string }) => {
+      return mcpClient.sendMessage(phoneNumber, message);
+    });
+
+    ipcMain.handle('mcp-calendar-search', async (_, searchText: string) => {
+      return mcpClient.searchCalendar(searchText);
+    });
+
+    ipcMain.handle('mcp-reminders-create', async (_, { name, listName, notes, dueDate }: { name: string; listName?: string; notes?: string; dueDate?: string }) => {
+      return mcpClient.createReminder(name, listName, notes, dueDate);
     });
   }
 
