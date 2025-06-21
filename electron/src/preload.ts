@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     quit: () => ipcRenderer.invoke('quit-app')
   },
 
+  // Notification operations
+  notifications: {
+    show: (title: string, body: string) => ipcRenderer.invoke('show-notification', { title, body })
+  },
+
   // Listen for events from main process
   onFocusInput: (callback: () => void) => {
     ipcRenderer.on('focus-input', callback);
@@ -39,6 +44,9 @@ export interface ElectronAPI {
     minimize: () => Promise<void>;
     hide: () => Promise<void>;
     quit: () => Promise<void>;
+  };
+  notifications: {
+    show: (title: string, body: string) => Promise<void>;
   };
   onFocusInput: (callback: () => void) => void;
   removeAllListeners: (channel: string) => void;

@@ -241,6 +241,14 @@ class PromiseKeeperApp {
             input.value = '';
             this.promises.unshift(data);
             this.renderPromises();
+
+            // Show notification when promise is added
+            if (window.electronAPI?.notifications) {
+                window.electronAPI.notifications.show(
+                    'Promise Added',
+                    `New promise: ${content}`
+                );
+            }
         }
     }
 

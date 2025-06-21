@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification } from 'electron';
 import * as path from 'path';
 import Store from 'electron-store';
 import { createTrayIcon } from './create-tray-icon';
@@ -170,6 +170,23 @@ class PromiseKeeperApp {
     ipcMain.handle('quit-app', () => {
       this.isQuitting = true;
       app.quit();
+    });
+
+    // Handle notifications
+    ipcMain.handle('show-notification', (_, { title, body }) => {
+      if (Notification.isSupported()) {
+        const notification = new Notification({
+          title,
+          body,
+          silent: false
+        });
+
+        notification.on('click', () => {
+          this.showWindow();
+        });
+
+        notification.show();
+      }
     });
   }
 }
