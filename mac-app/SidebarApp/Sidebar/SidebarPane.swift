@@ -10,6 +10,10 @@ enum SidebarPane {
     // MARK: More Section
     
     case moreStuff
+    
+    // MARK: Account Section
+    
+    case userProfile
 }
 
 // MARK: - Protocol Conformances

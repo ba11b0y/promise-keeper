@@ -1,20 +1,38 @@
 import SwiftUI
 
 struct SidebarFooter: View {
+    @EnvironmentObject var supabaseManager: SupabaseManager
+    
     var body: some View {
         VStack(spacing: 6) {
-            Text("Sidebar Footer")
-                .fontWeight(.medium)
-                .foregroundColor(Color.white.opacity(0.6))
-            Text("You could put stuff here.")
-                .font(.footnote)
-                .foregroundColor(Color.black.opacity(0.4))
+            if let user = supabaseManager.currentUser {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .foregroundColor(.accentColor)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(user.email ?? "Unknown")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .lineLimit(1)
+                        Text("Signed in")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+            } else {
+                Text("Loading user...")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
-        .frame(height: 60)
+        .frame(height: 50)
         .frame(maxWidth: .infinity)
-        .background(Color.gray.opacity(0.2))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
-        .padding()
+        .padding(.horizontal)
     }
 }
 

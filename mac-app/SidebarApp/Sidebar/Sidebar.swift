@@ -9,13 +9,24 @@ import SwiftUI
 struct Sidebar: View {
         
     @State var selection: SidebarPane? = nil
-    
     @State var searchText: String = ""
+    @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
         List {
             GeneralSidebarSection(selection: $selection)
             MoreSidebarSection(selection: $selection)
+            
+            // User Profile Section
+            Section("Account") {
+                NavigationLink(
+                    destination: UserProfileView(),
+                    tag: SidebarPane.userProfile,
+                    selection: $selection
+                ) {
+                    Label("Profile", systemImage: "person.crop.circle")
+                }
+            }
         }
         .listStyle(SidebarListStyle())
         .frame(minWidth: 180, idealWidth: 180, maxWidth: 300)
