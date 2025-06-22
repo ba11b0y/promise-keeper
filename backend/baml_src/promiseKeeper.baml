@@ -10,6 +10,9 @@ class Promise {
   deadline string? @description(#"
     When the promise should be fulfilled (could be specific date or relative time)
   "#)
+  similar_to int[] @description(#"
+    any promises this one might be a duplicate of
+  "#)
 }
 
 class PromiseListResponse {

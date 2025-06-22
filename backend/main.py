@@ -284,7 +284,8 @@ async def extract_promises_from_file_authenticated(
                         content=existing["content"],
                         reasoning=None,  # Don't need reasoning for existing promises
                         to_whom=extraction_data.get("to_whom"),
-                        deadline=extraction_data.get("deadline")
+                        deadline=extraction_data.get("deadline"),
+                        similar_to=[]
                     ))
                 
                 # Use BAML to filter out duplicates
@@ -292,7 +293,17 @@ async def extract_promises_from_file_authenticated(
                 filtered_promises: list[BAMLPromise] | None = b.CheckExistingPromises(promises.promises, existing_promises_baml)
                 if filtered_promises is None:
                     filtered_promises = []
-                new_promises_to_save = filtered_promises
+
+                promises_to_save_that_have_similar_promises = [p for p in filtered_promises if p.similar_to != []]
+
+                if (len(promises_to_save_that_have_similar_promises) > 0):
+                    logger.info(f"Auth endpoint - User {user_id} - Promises to save that have similar promises: {promises_to_save_that_have_similar_promises}")
+
+                new_promises_to_save = [p for p in filtered_promises if p.similar_to == []]
+                
+                if (len(new_promises_to_save) > 0):
+                    logger.info(f"Auth endpoint - User {user_id} - New promises to save: {new_promises_to_save}")
+
                 
                 logger.info(f"Auth endpoint - User {user_id} - After filtering: {len(new_promises_to_save)} new promises to save")
                 
