@@ -288,7 +288,20 @@ class PromiseListingPage {
         this.setupEventListeners();
         
         if (user) {
-            const firstName = user.email?.split('@')[0] || user.name?.split(' ')[0] || 'User';
+            console.log('Promise listing user object:', user);
+            // Extract first name from email or name, or use 'User' as fallback
+            let firstName = 'User';
+            if (user.email) {
+                firstName = user.email.split('@')[0];
+            } else if (user.name) {
+                firstName = user.name.split(' ')[0];
+            } else if (user.user_metadata?.full_name) {
+                firstName = user.user_metadata.full_name.split(' ')[0];
+            } else if (user.user_metadata?.name) {
+                firstName = user.user_metadata.name.split(' ')[0];
+            }
+            
+            console.log('Extracted firstName:', firstName);
             const userNameEl = document.getElementById('userName');
             if (userNameEl) {
                 userNameEl.textContent = firstName;

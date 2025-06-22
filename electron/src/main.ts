@@ -117,13 +117,12 @@ class PromiseKeeperApp {
       },
       show: false,
       frame: false,
-      transparent: true,
-      vibrancy: 'fullscreen-ui',
+      transparent: false,
       resizable: true,
       skipTaskbar: false,
       title: 'Promise Keeper',
       titleBarStyle: 'hidden',
-      backgroundColor: '#00000000'
+      backgroundColor: '#ffffff'
     });
 
     // Load the React app HTML file
