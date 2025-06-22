@@ -289,24 +289,24 @@ class PromiseKeeperApp {
     });
 
     // Add MCP IPC handlers
-    ipcMain.handle('mcp-contacts-search', async (_, name?: string) => {
-      return mcpClient.searchContacts(name);
+    ipcMain.handle('mcp-messages-list-chats', async (_, { includeParticipantDetails }: { includeParticipantDetails?: boolean }) => {
+      return mcpClient.listChats(includeParticipantDetails);
     });
 
-    ipcMain.handle('mcp-notes-create', async (_, { title, body, folderName }: { title: string; body: string; folderName?: string }) => {
-      return mcpClient.createNote(title, body, folderName);
+    ipcMain.handle('mcp-messages-get', async (_, { limit }: { limit?: number }) => {
+      return mcpClient.getMessages(limit);
     });
 
-    ipcMain.handle('mcp-messages-send', async (_, { phoneNumber, message }: { phoneNumber: string; message: string }) => {
-      return mcpClient.sendMessage(phoneNumber, message);
+    ipcMain.handle('mcp-messages-search', async (_, { searchText, sender, chatId, limit, daysBack }: { searchText: string; sender?: string; chatId?: string; limit?: number; daysBack?: number }) => {
+      return mcpClient.searchMessages(searchText, sender, chatId, limit, daysBack);
     });
 
-    ipcMain.handle('mcp-calendar-search', async (_, searchText: string) => {
-      return mcpClient.searchCalendar(searchText);
+    ipcMain.handle('mcp-messages-send', async (_, { recipient, body, auto }: { recipient: string; body?: string; auto?: boolean }) => {
+      return mcpClient.sendMessage(recipient, body, auto);
     });
 
-    ipcMain.handle('mcp-reminders-create', async (_, { name, listName, notes, dueDate }: { name: string; listName?: string; notes?: string; dueDate?: string }) => {
-      return mcpClient.createReminder(name, listName, notes, dueDate);
+    ipcMain.handle('mcp-system-launch-app', async (_, { appName }: { appName: string }) => {
+      return mcpClient.launchApp(appName);
     });
 
     // Handle manual screenshot requests

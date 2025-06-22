@@ -11,9 +11,9 @@ export class MCPClient {
         try {
             // Create transport with command to start the MCP server
             const transport = new StdioClientTransport({
-                command: "bun",
-                args: ["index.ts"],
-                cwd: path.join(process.cwd(), '../apple-mcp')
+                command: "npm",
+                args: ["run", "start"],
+                cwd: path.join(process.cwd(), '../applescript-mcp')
             });
 
             // Create and connect client
@@ -30,19 +30,19 @@ export class MCPClient {
         }
     }
 
-    async callTool(name: string, args: any) {
+    async callTool(category: string, args: { name: string; arguments: any }) {
         if (!this.client) {
             throw new Error('MCP client not initialized');
         }
 
         try {
             const response = await this.client.callTool({
-                name,
-                arguments: args
+                name: `${category}_${args.name}`,
+                arguments: args.arguments
             });
             return response;
         } catch (error) {
-            console.error(`Error calling MCP tool ${name}:`, error);
+            console.error(`Error calling MCP tool ${category}:`, error);
             throw error;
         }
     }
@@ -56,42 +56,56 @@ export class MCPClient {
         }
     }
 
-    // Helper methods for common operations
-    async searchContacts(name?: string) {
-        return this.callTool('contacts', { name });
-    }
-
-    async createNote(title: string, body: string, folderName?: string) {
-        return this.callTool('notes', {
-            operation: 'create',
-            title,
-            body,
-            folderName
-        });
-    }
-
-    async sendMessage(phoneNumber: string, message: string) {
+    // Messages operations
+    async listChats(includeParticipantDetails?: boolean) {
         return this.callTool('messages', {
-            operation: 'send',
-            phoneNumber,
-            message
+            name: 'list_chats',
+            arguments: {
+                includeParticipantDetails: includeParticipantDetails ?? false
+            }
         });
     }
 
-    async searchCalendar(searchText: string) {
-        return this.callTool('calendar', {
-            operation: 'search',
-            searchText
+    async getMessages(limit?: number) {
+        return this.callTool('messages', {
+            name: 'get_messages',
+            arguments: {
+                limit: limit ?? 100
+            }
         });
     }
 
-    async createReminder(name: string, listName?: string, notes?: string, dueDate?: string) {
-        return this.callTool('reminders', {
-            operation: 'create',
-            name,
-            listName,
-            notes,
-            dueDate
+    async searchMessages(searchText: string, sender?: string, chatId?: string, limit?: number, daysBack?: number) {
+        return this.callTool('messages', {
+            name: 'search_messages',
+            arguments: {
+                searchText,
+                ...(sender && { sender }),
+                ...(chatId && { chatId }),
+                limit: limit ?? 50,
+                daysBack: daysBack ?? 30
+            }
+        });
+    }
+
+    async sendMessage(recipient: string, body?: string, auto?: boolean) {
+        return this.callTool('messages', {
+            name: 'compose_message',
+            arguments: {
+                recipient,
+                ...(body && { body }),
+                auto: auto ?? false
+            }
+        });
+    }
+
+    // System operations
+    async launchApp(appName: string) {
+        return this.callTool('system', {
+            name: 'launch_app',
+            arguments: {
+                name: appName
+            }
         });
     }
 }
