@@ -1,6 +1,9 @@
 // Defining a data model for individual promises.
 class Promise {
   content string
+  how_sure bool @description(#"
+    if you are sure this is a promise 
+  "#)
   reasoning string? @description(#"
     The reasoning behind the promise - whatever you think is relevant for why you created this promise from the data
   "#)

@@ -165,10 +165,16 @@ async def extract_promises_from_base64(request: ImageBase64Request):
         # Log reasoning information
         if promises.reason_for_no_promises:
             logger.info(f"Reason for no promises: {promises.reason_for_no_promises}")
+
+        final_promises = []
         
         for i, promise in enumerate(promises.promises):
             if promise.reasoning:
+                logger.info(f"Promise {i+1} content: {promise.content}")
+                logger.info(f"Promise {i+1} how sure you are that this is a real promise: {promise.how_sure}")
                 logger.info(f"Promise {i+1} reasoning: {promise.reasoning}")
+                if promise.how_sure == baml_py.HowSureYouAreThisIsARealPromise.COMPLETLEY_SURE_A_PROMISE or promise.how_sure == baml_py.HowSureYouAreThisIsARealPromise.PROBABLY_A_PROMISE:
+                    final_promises.append(promise)
         
         return PromiseListResponse(promises=[
             {
@@ -177,7 +183,7 @@ async def extract_promises_from_base64(request: ImageBase64Request):
                 "deadline": p.deadline,
                 "action": getattr(p, 'action', '') or ''
             }
-            for p in promises.promises
+            for p in final_promises
         ])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
@@ -277,6 +283,18 @@ async def extract_promises_from_file_authenticated(
                     logger.info(f"Auth endpoint - User {user_id} - Promise {i+1} reasoning: {promise.reasoning}")
         
         promises = rawPromiseOutput
+
+        final_promises = []
+        
+        for i, promise in enumerate(promises.promises):
+            if promise.reasoning:
+                logger.info(f"Promise {i+1} content: {promise.content}")
+                logger.info(f"Promise {i+1} how sure you are that this is a real promise: {promise.how_sure}")
+                logger.info(f"Promise {i+1} reasoning: {promise.reasoning}")
+                if promise.how_sure:
+                    final_promises.append(promise)
+
+        promises.promises = final_promises
         
         # If we found promises, check against existing ones in the database
         new_promises_to_save = []
