@@ -294,12 +294,23 @@ async def extract_promises_from_file_authenticated(
                 for existing in existing_promises_raw:
                     # Parse extraction_data to get original promise details
                     extraction_data = json.loads(existing.get("extraction_data", "{}"))
+                    
+                    # Parse potential_actions if it exists in the database
+                    potential_actions = []
+                    if existing.get("potential_actions"):
+                        try:
+                            potential_actions_data = json.loads(existing["potential_actions"])
+                            # Convert to PotentialAction objects if needed
+                            potential_actions = potential_actions_data if isinstance(potential_actions_data, list) else []
+                        except (json.JSONDecodeError, TypeError):
+                            potential_actions = []
+                    
                     existing_promises_baml.append(BAMLPromise(
                         content=existing["content"],
                         reasoning=None,  # Don't need reasoning for existing promises
                         to_whom=extraction_data.get("to_whom"),
                         deadline=extraction_data.get("deadline"),
-                        similar_to=[]
+                        potentialActionsToTake=potential_actions  # Required field
                     ))
                 
                 # Use BAML to evaluate each promise individually
