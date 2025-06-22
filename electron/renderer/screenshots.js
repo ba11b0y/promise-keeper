@@ -110,11 +110,7 @@ class ScreenshotManager {
                     window.PromiseKeeperUI.showUploadMessage(message, 'success');
 
                     // Reload the promises list to show updates
-                    if (this.app.promiseListing) {
-                        await this.app.promiseListing.loadPromises();
-                    } else {
-                        await this.app.promises.loadPromises();
-                    }
+                    await this.app.promiseListing.loadPromises();
                 } else {
                     window.PromiseKeeperUI.showUploadMessage('No new promises found or resolved in the image.', 'info');
                 }
@@ -222,10 +218,7 @@ class ScreenshotManager {
                         }
                     }
                     
-                    // Notify promise listing if available
-                    if (this.app.promiseListing && createdPromises.length > 0) {
-                        this.app.promiseListing.onPromisesAutoCreated(createdPromises, data.screenshotId);
-                    }
+                    // Promises will be displayed after loadPromises() is called below
                 }
                 
                 if (hasResolvedPromises) {
@@ -234,11 +227,7 @@ class ScreenshotManager {
                 
                 if (hasNewPromises || hasResolvedPromises) {
                     // Reload the promises list to show updates (both new and resolved)
-                    if (this.app.promiseListing) {
-                        await this.app.promiseListing.loadPromises();
-                    } else {
-                        await this.app.promises.loadPromises();
-                    }
+                    await this.app.promiseListing.loadPromises();
 
                     // Show notification through main process
                     if (window.electronAPI?.notifications) {
@@ -259,10 +248,7 @@ class ScreenshotManager {
                     if (hasNewPromises) {
                         window.PromiseKeeperUI.showAutoPromiseCreatedIndicator(result.promises, data.screenshotId);
                         
-                        // Also notify the promise listing component
-                        if (this.app.promiseListing) {
-                            this.app.promiseListing.onPromisesAutoCreated(result.promises, data.screenshotId);
-                        }
+                        // Promises will be displayed after loadPromises() is called above
                     }
                 }
             } else if (!apiResponse.ok) {

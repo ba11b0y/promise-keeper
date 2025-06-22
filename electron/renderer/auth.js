@@ -38,12 +38,8 @@ class AuthManager {
                 window.PromiseKeeperUI.showLoginMessage('Welcome back!', 'success');
                 setTimeout(() => {
                     this.app.ui.showPromiseSection();
-                    // Use the new promise listing component instead of old promises
-                    if (this.app.promiseListing) {
-                        this.app.promiseListing.loadPromises();
-                    } else {
-                        this.app.promises.loadPromises();
-                    }
+                    // Use the new promise listing component
+                    this.app.promiseListing.loadPromises();
                 }, 1000);
             } else {
                 window.PromiseKeeperUI.showLoginMessage('Login failed - no user returned', 'error');
@@ -118,12 +114,8 @@ class AuthManager {
                         console.log('Auto-login successful:', loginData.user);
                         this.app.currentUser = loginData.user;
                         this.app.ui.showPromiseSection();
-                        // Use the new promise listing component instead of old promises
-                        if (this.app.promiseListing) {
-                            this.app.promiseListing.loadPromises();
-                        } else {
-                            this.app.promises.loadPromises();
-                        }
+                        // Use the new promise listing component
+                        this.app.promiseListing.loadPromises();
                     }
                 }, 1000);
             }
@@ -152,12 +144,8 @@ class AuthManager {
         if (user) {
             this.app.currentUser = user;
             this.app.ui.showPromiseSection();
-            // Use the new promise listing component instead of old promises
-            if (this.app.promiseListing) {
-                await this.app.promiseListing.loadPromises();
-            } else {
-                await this.app.promises.loadPromises();
-            }
+            // Use the new promise listing component
+            await this.app.promiseListing.loadPromises();
             return true;
         } else {
             this.app.ui.showLoginPage();
@@ -195,12 +183,8 @@ class AuthManager {
                 showLoginMessage('Welcome back!', 'success');
                 setTimeout(() => {
                     this.app.ui.showPromiseSection();
-                    // Use the new promise listing component instead of old promises
-                    if (this.app.promiseListing) {
-                        this.app.promiseListing.loadPromises();
-                    } else {
-                        this.app.promises.loadPromises();
-                    }
+                    // Use the new promise listing component
+                    this.app.promiseListing.loadPromises();
                 }, 1000);
             } else {
                 showLoginMessage('Login failed - no user returned', 'error');
@@ -269,12 +253,8 @@ class AuthManager {
                         console.log('Auto-login successful:', loginData.user);
                         this.app.currentUser = loginData.user;
                         this.app.ui.showPromiseSection();
-                        // Use the new promise listing component instead of old promises
-                        if (this.app.promiseListing) {
-                            this.app.promiseListing.loadPromises();
-                        } else {
-                            this.app.promises.loadPromises();
-                        }
+                        // Use the new promise listing component
+                        this.app.promiseListing.loadPromises();
                     }
                 }, 1000);
             }

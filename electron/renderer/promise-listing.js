@@ -914,16 +914,40 @@ class PromiseListingPage {
         
         console.log('onPromisesAutoCreated called with', promises.length, 'promises');
         
-        // Add promises to local list
+        // Add promises to local list, but check for duplicates first
+        let addedCount = 0;
         promises.forEach(promise => {
-            this.promises.unshift(promise);
+            // Check if this promise already exists in our local list
+            const existingIndex = this.promises.findIndex(p => {
+                // Compare by ID if available, otherwise by content
+                if (promise.id && p.id) {
+                    return p.id === promise.id;
+                }
+                // Fallback to content comparison
+                const promiseContent = promise.content || promise.text || promise;
+                const existingContent = p.content || p.text || p;
+                return promiseContent === existingContent;
+            });
+            
+            // Only add if it doesn't already exist
+            if (existingIndex === -1) {
+                this.promises.unshift(promise);
+                addedCount++;
+            } else {
+                console.log('Skipping duplicate promise:', promise.content || promise.text || promise);
+            }
         });
         
-        this.updateStats();
-        this.filterAndRenderPromises();
+        console.log(`Added ${addedCount} new promises, skipped ${promises.length - addedCount} duplicates`);
         
-        // Show notification indicator (similar to existing showAutoPromiseCreatedIndicator)
-        this.showAutoPromiseCreatedIndicator(promises, screenshotId);
+        // Only update if we actually added new promises
+        if (addedCount > 0) {
+            this.updateStats();
+            this.filterAndRenderPromises();
+            
+            // Show notification indicator (similar to existing showAutoPromiseCreatedIndicator)
+            this.showAutoPromiseCreatedIndicator(promises.filter((promise, index) => index < addedCount), screenshotId);
+        }
     }
     
     showAutoPromiseCreatedIndicator(promises, screenshotId) {
