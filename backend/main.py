@@ -288,24 +288,35 @@ async def extract_promises_from_file_authenticated(
                         similar_to=[]
                     ))
                 
-                # Use BAML to filter out duplicates
+                # Use BAML to evaluate each promise individually
                 logger.info(f"Auth endpoint - User {user_id} - Checking {len(promises.promises)} new promises against {len(existing_promises_baml)} existing promises")
-                filtered_promises: list[BAMLPromise] | None = b.CheckExistingPromises(promises.promises, existing_promises_baml)
-                if filtered_promises is None:
-                    filtered_promises = []
-
-                promises_to_save_that_have_similar_promises = [p for p in filtered_promises if p.similar_to != []]
-
-                if (len(promises_to_save_that_have_similar_promises) > 0):
-                    logger.info(f"Auth endpoint - User {user_id} - Promises to save that have similar promises: {promises_to_save_that_have_similar_promises}")
-
-                new_promises_to_save = [p for p in filtered_promises if p.similar_to == []]
                 
-                if (len(new_promises_to_save) > 0):
-                    logger.info(f"Auth endpoint - User {user_id} - New promises to save: {new_promises_to_save}")
-
+                from baml_client.types import ShouldSaveNewPromiseEnum
                 
-                logger.info(f"Auth endpoint - User {user_id} - After filtering: {len(new_promises_to_save)} new promises to save")
+                new_promises_to_save = []
+                possibly_save_promises = []
+                definitely_not_save_promises = []
+                
+                for promise in promises.promises:
+                    try:
+                        should_save_result = b.ShouldSaveNewPromise(existing_promises_baml, promise)
+                        
+                        if should_save_result == ShouldSaveNewPromiseEnum.DEFINITELY_SAVE:
+                            new_promises_to_save.append(promise)
+                            logger.info(f"Auth endpoint - User {user_id} - DEFINITELY_SAVE: {promise.content}")
+                        elif should_save_result == ShouldSaveNewPromiseEnum.POSSIBLY_SAVE:
+                            possibly_save_promises.append(promise)
+                            logger.info(f"Auth endpoint - User {user_id} - POSSIBLY_SAVE: {promise.content}")
+                        else:  # DEFINITELY_NOT_SAVE
+                            definitely_not_save_promises.append(promise)
+                            logger.info(f"Auth endpoint - User {user_id} - DEFINITELY_NOT_SAVE: {promise.content}")
+                            
+                    except Exception as eval_error:
+                        logger.error(f"Auth endpoint - User {user_id} - Error evaluating promise '{promise.content}': {eval_error}")
+                        # On error, don't save to be safe
+                        continue
+                
+                logger.info(f"Auth endpoint - User {user_id} - Results: {len(new_promises_to_save)} to save, {len(possibly_save_promises)} possibly save, {len(definitely_not_save_promises)} not save")
                 
             except Exception as filter_error:
                 logger.error(f"Error filtering promises: {filter_error}")

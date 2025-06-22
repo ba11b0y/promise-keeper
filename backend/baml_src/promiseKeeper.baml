@@ -10,9 +10,6 @@ class Promise {
   deadline string? @description(#"
     When the promise should be fulfilled (could be specific date or relative time)
   "#)
-  similar_to int[] @description(#"
-    any promises this one might be a duplicate of
-  "#)
 }
 
 class PromiseListResponse {
@@ -99,6 +96,62 @@ function CheckExistingPromises(newPotentialPromises: Promise[], existingPromises
 
     {{ ctx.output_format }}
   "#
+}
+
+function ShouldSaveNewPromise(existingPromises: Promise[], newPotentialPromise: Promise) -> ShouldSaveNewPromiseEnum {
+  client LlamaAPI
+  prompt #"
+    You are a promise keeper assistant that evaluates whether a single new promise should be saved by comparing it against existing promises.
+
+    TASK: Analyze the new potential promise against all existing promises and determine if it should be saved to avoid duplicates.
+
+    NEW POTENTIAL PROMISE:
+    {{ newPotentialPromise }}
+
+    EXISTING PROMISES in database:
+    {{ existingPromises }}
+
+    EVALUATION CRITERIA:
+    A new promise should be evaluated based on similarity to existing promises considering:
+    - **content** (the main promise text - exact or very similar meaning)
+    - **to_whom** (same recipient)  
+    - **deadline** (same or very similar timeframe)
+
+    DECISION RULES:
+    1. **DEFINITELY_NOT_SAVE**: If the new promise is essentially identical to an existing promise
+       - Same content/meaning, same recipient, same deadline
+       - Minor wording differences but same commitment, person, and timeframe
+    
+    2. **DEFINITELY_SAVE**: If the new promise is clearly different from all existing promises
+       - Different content/commitment entirely
+       - Same content but different recipient
+       - Same content/recipient but significantly different deadline
+       - New type of commitment not covered by existing promises
+    
+    3. **POSSIBLY_SAVE**: If there's some similarity but meaningful differences
+       - Similar content but with additional details or specificity
+       - Same general commitment but refined deadline (e.g., "this week" → "Friday")
+       - Minor variations that might represent updates or clarifications
+
+    EXAMPLES:
+    - Existing: "I'll send the report by Friday" to "John" → New: "I'll send the report by Friday" to "John" = DEFINITELY_NOT_SAVE
+    - Existing: "I'll call mom this weekend" → New: "I'll call mom Sunday at 3pm" = POSSIBLY_SAVE (more specific)
+    - Existing: "I'll review the document for John" → New: "I'll review the document for Sarah" = DEFINITELY_SAVE (different recipient)
+    - Existing: "I'll send the budget analysis" → New: "I'll email you the quarterly budget analysis by tomorrow" = POSSIBLY_SAVE (more details)
+
+    IMPORTANT: 
+    - Focus on the practical impact: would saving this promise provide value to the user?
+    - Consider that slight variations might represent important updates or clarifications
+    - The "reasoning" field should NOT be the primary factor - focus on content, recipient, and deadline
+
+    {{ ctx.output_format }}
+  "#
+}
+
+enum ShouldSaveNewPromiseEnum {
+  DEFINITELY_SAVE
+  DEFINITELY_NOT_SAVE
+  POSSIBLY_SAVE
 }
 
 test TestName {
