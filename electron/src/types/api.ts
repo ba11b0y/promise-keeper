@@ -97,6 +97,7 @@ export interface DatabasePromise {
   extraction_data?: string; // JSON string
   potential_actions?: string; // JSON string of EnhancedPotentialAction[]
   metadata?: string; // JSON string
+  action?: string; // JSON string of Action
 }
 
 // Parsed versions of database fields

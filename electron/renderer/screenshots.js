@@ -204,21 +204,8 @@ class ScreenshotManager {
                     
                     console.log('Promise screenshot saved to:', savedScreenshotPath);
                     
-                    // Create promises in database and notify the UI components
-                    const createdPromises = [];
-                    for (const promise of result.promises) {
-                        const createdPromise = await this.app.promises.createPromiseFromExtraction(
-                            promise, 
-                            data.screenshotId, 
-                            data.timestamp
-                        );
-                        
-                        if (createdPromise) {
-                            createdPromises.push(createdPromise);
-                        }
-                    }
-                    
-                    // Promises will be displayed after loadPromises() is called below
+                    // Backend has already created the promises in the database
+                    // We just need to refresh the UI to show them
                 }
                 
                 if (hasResolvedPromises) {
@@ -229,19 +216,42 @@ class ScreenshotManager {
                     // Reload the promises list to show updates (both new and resolved)
                     await this.app.promiseListing.loadPromises();
 
-                    // Show notification through main process
+                    // Show notifications through main process
                     if (window.electronAPI?.notifications) {
-                        // Attempt to pass metadata from the first detected promise (if any)
-                        let metadata = undefined;
-                        if (result.promises && result.promises.length > 0) {
+                        if (hasNewPromises && result.promises && result.promises.length > 0) {
+                            // Notification for new promises
                             const firstPromise = result.promises[0];
-                            metadata = {
+                            const promiseContent = firstPromise.content || firstPromise.text || 'New promise detected';
+                            
+                            const metadata = {
                                 action: firstPromise.action || '',
                                 start_date: firstPromise.deadline ? String(firstPromise.deadline) : undefined,
                                 to_whom: firstPromise.to_whom ? String(firstPromise.to_whom) : undefined
                             };
+                            
+                            window.electronAPI.notifications.show('Promise Keeper', 
+                                `New promise: ${promiseContent}`, metadata);
                         }
-                        window.electronAPI.notifications.show('Promise Keeper', result.promises[0].content, metadata);
+                        
+                        if (hasResolvedPromises && result.resolved_promises && result.resolved_promises.length > 0) {
+                            // Notification for resolved promises
+                            const resolvedCount = result.resolved_promises.length;
+                            const firstResolvedPromise = result.resolved_promises[0];
+                            const resolvedContent = firstResolvedPromise.content || firstResolvedPromise.text || 'Promise';
+                            
+                            const resolvedMetadata = {
+                                action: 'resolved',
+                                start_date: undefined,
+                                to_whom: firstResolvedPromise.to_whom || undefined
+                            };
+                            
+                            const resolvedMessage = resolvedCount === 1 
+                                ? `Resolved: ${resolvedContent}`
+                                : `Resolved ${resolvedCount} promises including: ${resolvedContent}`;
+                            
+                            window.electronAPI.notifications.show('Promise Keeper', 
+                                resolvedMessage, resolvedMetadata);
+                        }
                     }
 
                     // Show enhanced indicator for new promises
