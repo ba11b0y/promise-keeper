@@ -200,10 +200,20 @@ class UIManager {
             select.value = this.app.screenshots.screenshotMode;
         }
         
-        // Notify main process of the current mode
-        this.app.screenshots.setScreenshotMode(this.app.screenshots.screenshotMode).catch(error => {
-            console.warn('Failed to set initial screenshot mode:', error);
-        });
+        // Notify main process of the current mode with retry logic
+        this.setInitialScreenshotMode();
+    }
+    
+    setInitialScreenshotMode() {
+        // Set the screenshot mode - IPC handlers are now ready since they're set up before window creation
+        this.app.screenshots.setScreenshotMode(this.app.screenshots.screenshotMode)
+            .then(() => {
+                console.log('Successfully set initial screenshot mode');
+            })
+            .catch(error => {
+                console.error('Failed to set initial screenshot mode:', error);
+                // Don't throw - not critical for app startup
+            });
     }
 }
 

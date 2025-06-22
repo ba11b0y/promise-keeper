@@ -470,8 +470,12 @@ class PromiseListingPage {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const screenshotId = btn.getAttribute('data-screenshot-id');
-                if (screenshotId && this.app.screenshots) {
-                    this.app.screenshots.viewScreenshot(screenshotId);
+                if (screenshotId) {
+                    if (this.app.screenshots) {
+                        this.app.screenshots.viewScreenshot(screenshotId);
+                    } else {
+                        console.warn('Screenshot manager not available, screenshotId:', screenshotId);
+                    }
                 }
             });
         });
@@ -483,7 +487,10 @@ class PromiseListingPage {
         if (promise.extracted_from_screenshot && promise.screenshot_id) {
             indicators += `
                 <button class="screenshot-indicator initial" data-screenshot-id="${promise.screenshot_id}" title="View source screenshot">
-                    📸
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
                 </button>
             `;
         }
@@ -491,7 +498,10 @@ class PromiseListingPage {
         if (promise.resolved && promise.resolved_screenshot_id) {
             indicators += `
                 <button class="screenshot-indicator resolved" data-screenshot-id="${promise.resolved_screenshot_id}" title="View resolution screenshot">
-                    ✅
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                    </svg>
                 </button>
             `;
         }
@@ -507,7 +517,12 @@ class PromiseListingPage {
         
         return `
             <div class="resolution-info">
-                <span class="resolved-status">✅ Resolved</span>
+                <span class="resolved-status">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                    Resolved
+                </span>
                 <span class="resolved-date">${resolvedDate}</span>
                 ${reason ? `<div class="resolved-reason" title="${this.escapeHtml(reason)}">${this.escapeHtml(reason.length > 80 ? reason.substring(0, 80) + '...' : reason)}</div>` : ''}
             </div>
@@ -622,36 +637,49 @@ class PromiseListingPage {
         if (!promise) return;
 
         try {
-            // For now, mock the resolution API call
-            const resolvedData = await this.mockResolvePromise(promise);
+            let updateData = { resolved: !promise.resolved };
+            
+            if (!promise.resolved) {
+                // Resolving the promise - add resolution data
+                const resolvedData = await this.mockResolvePromise(promise);
+                updateData.resolved_screenshot_time = resolvedData.timestamp;
+                updateData.resolved_reason = resolvedData.reason;
+                updateData.resolved_screenshot_id = resolvedData.screenshotId;
+            } else {
+                // Unresolving the promise - clear resolution data
+                updateData.resolved_screenshot_time = null;
+                updateData.resolved_reason = null;
+                updateData.resolved_screenshot_id = null;
+            }
             
             const { error } = await window.PromiseKeeperConfig.supabaseClient
                 .from('promises')
-                .update({
-                    resolved: !promise.resolved,
-                    resolved_screenshot_time: resolvedData.timestamp,
-                    resolved_reason: resolvedData.reason,
-                    resolved_screenshot_id: resolvedData.screenshotId
-                })
+                .update(updateData)
                 .eq('id', id);
 
             if (error) {
                 console.error('Failed to update promise:', error);
+                alert('Failed to update promise: ' + error.message);
                 return;
             }
 
             // Update local data
             promise.resolved = !promise.resolved;
             if (promise.resolved) {
-                promise.resolved_screenshot_time = resolvedData.timestamp;
-                promise.resolved_reason = resolvedData.reason;
-                promise.resolved_screenshot_id = resolvedData.screenshotId;
+                promise.resolved_screenshot_time = updateData.resolved_screenshot_time;
+                promise.resolved_reason = updateData.resolved_reason;
+                promise.resolved_screenshot_id = updateData.resolved_screenshot_id;
+            } else {
+                promise.resolved_screenshot_time = null;
+                promise.resolved_reason = null;
+                promise.resolved_screenshot_id = null;
             }
 
             this.updateStats();
             this.filterAndRenderPromises();
         } catch (err) {
             console.error('Error toggling promise:', err);
+            alert('Error updating promise: ' + err.message);
         }
     }
 
@@ -804,16 +832,43 @@ class PromiseListingPage {
         }
         
         // Apply settings to screenshot manager
-        if (this.app.screenshots) {
+        if (this.app && this.app.screenshots) {
             this.app.screenshots.screenshotMode = savedMode || 'enter';
             this.app.screenshots.autoResolveEnabled = savedAutoResolve !== 'false';
+            
+            // Set the mode via the screenshot manager's method
+            // Since IPC handlers are now set up before window creation, they should be ready
+            this.app.screenshots.setScreenshotMode(savedMode || 'enter')
+                .then(() => {
+                    console.log('Successfully set screenshot mode in promise listing');
+                })
+                .catch(error => {
+                    console.warn('Failed to set initial screenshot mode in loadSettings:', error);
+                    // Don't throw - this is not critical for app startup
+                });
+        } else {
+            console.warn('Screenshot manager not available during loadSettings');
         }
     }
 
     async handleScreenshotModeChange(mode) {
         localStorage.setItem('screenshotMode', mode);
-        if (window.electronAPI?.screenshots?.setScreenshotMode) {
-            await window.electronAPI.screenshots.setScreenshotMode(mode);
+        
+        // Update the shared screenshot manager
+        if (this.app.screenshots) {
+            await this.app.screenshots.setScreenshotMode(mode);
+        } else {
+            // Fallback to direct IPC call if screenshot manager isn't available
+            try {
+                if (window.electronAPI?.screenshots?.setScreenshotMode) {
+                    const result = await window.electronAPI.screenshots.setScreenshotMode(mode);
+                    if (result && !result.success) {
+                        console.error('Failed to set screenshot mode:', result.error);
+                    }
+                }
+            } catch (error) {
+                console.error('Error setting screenshot mode via IPC:', error);
+            }
         }
     }
     
@@ -825,8 +880,14 @@ class PromiseListingPage {
     }
 
     takeScreenshot() {
-        if (window.electronAPI?.screenshots?.takeScreenshotNow) {
-            window.electronAPI.screenshots.takeScreenshotNow();
+        // Use the shared screenshot manager
+        if (this.app.screenshots) {
+            this.app.screenshots.takeScreenshotNow();
+        } else {
+            // Fallback to direct IPC call
+            if (window.electronAPI?.screenshots?.takeScreenshotNow) {
+                window.electronAPI.screenshots.takeScreenshotNow();
+            }
         }
     }
 
@@ -865,6 +926,8 @@ class PromiseListingPage {
     onPromisesAutoCreated(promises, screenshotId) {
         if (!promises || promises.length === 0) return;
         
+        console.log('onPromisesAutoCreated called with', promises.length, 'promises');
+        
         // Add promises to local list
         promises.forEach(promise => {
             this.promises.unshift(promise);
@@ -891,10 +954,19 @@ class PromiseListingPage {
 
         indicator.innerHTML = `
             <div class="auto-promise-notification">
-                <strong>✅ ${promises.length} Promise${promises.length > 1 ? 's' : ''} Auto-Created & Saved</strong><br>
-                <span class="promise-list">• ${promisesList}</span><br>
+                <div class="auto-promise-header">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                    <strong>${promises.length} Promise${promises.length > 1 ? 's' : ''} Auto-Created</strong>
+                </div>
+                <span class="promise-list">${promisesList}</span>
                 <span class="screenshot-info">
-                    📸 From screenshot: ${screenshotId}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    Screenshot: ${screenshotId}
                 </span>
             </div>
         `;

@@ -2,7 +2,7 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, des
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import Store from 'electron-store';
+const Store = require('electron-store');
 import { createTrayIcon } from './create-tray-icon';
 import * as dotenv from 'dotenv';
 import { mcpClient } from './services/mcp-client';
@@ -40,9 +40,14 @@ class PromiseKeeperApp {
     app.whenReady().then(async () => {
       try {
         await mcpClient.initialize();
+        
+        // CRITICAL: Set up IPC handlers FIRST before any window creation
+        this.setupIPC();
+        console.log('IPC handlers registered');
+        
+        // Now create window and other components
         this.createWindow();
         this.createTray();
-        this.setupIPC();
         this.startScreenshots();
         this.setupGlobalShortcuts();
       } catch (error) {
@@ -99,8 +104,8 @@ class PromiseKeeperApp {
 
   private createWindow() {
     this.mainWindow = new BrowserWindow({
-      width: 400,
-      height: 600,
+      width: 500,
+      height: 800,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -111,13 +116,17 @@ class PromiseKeeperApp {
         experimentalFeatures: true
       },
       show: false,
-      frame: true,
+      frame: false,
+      transparent: true,
+      vibrancy: 'fullscreen-ui',
       resizable: true,
       skipTaskbar: false,
-      title: 'Promise Keeper'
+      title: 'Promise Keeper',
+      titleBarStyle: 'hidden',
+      backgroundColor: '#00000000'
     });
 
-    // Load the HTML file
+    // Load the React app HTML file
     this.mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
     // Handle media permissions
@@ -305,10 +314,6 @@ class PromiseKeeperApp {
       return mcpClient.sendMessage(recipient, body, auto);
     });
 
-    ipcMain.handle('mcp-calendar-add', async (_, { title, startDate, endDate, calendar }: { title: string; startDate: string; endDate: string; calendar?: string }) => {
-      return mcpClient.addCalendarEvent(title, startDate, endDate, calendar);
-    });
-
     ipcMain.handle('mcp-system-launch-app', async (_, { appName }: { appName: string }) => {
       return mcpClient.launchApp(appName);
     });
@@ -320,7 +325,13 @@ class PromiseKeeperApp {
 
     // Handle screenshot mode changes
     ipcMain.handle('set-screenshot-mode', (_, mode: 'off' | 'interval' | 'enter') => {
-      this.setScreenshotMode(mode);
+      try {
+        this.setScreenshotMode(mode);
+        return { success: true };
+      } catch (error) {
+        console.error('Error setting screenshot mode:', error);
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
     });
   }
 

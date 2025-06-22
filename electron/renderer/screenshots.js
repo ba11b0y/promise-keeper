@@ -207,6 +207,25 @@ class ScreenshotManager {
                     );
                     
                     console.log('Promise screenshot saved to:', savedScreenshotPath);
+                    
+                    // Create promises in database and notify the UI components
+                    const createdPromises = [];
+                    for (const promise of result.promises) {
+                        const createdPromise = await this.app.promises.createPromiseFromExtraction(
+                            promise, 
+                            data.screenshotId, 
+                            data.timestamp
+                        );
+                        
+                        if (createdPromise) {
+                            createdPromises.push(createdPromise);
+                        }
+                    }
+                    
+                    // Notify promise listing if available
+                    if (this.app.promiseListing && createdPromises.length > 0) {
+                        this.app.promiseListing.onPromisesAutoCreated(createdPromises, data.screenshotId);
+                    }
                 }
                 
                 if (hasResolvedPromises) {
@@ -512,22 +531,15 @@ class ScreenshotManager {
         // Store the preference in localStorage
         localStorage.setItem('screenshotMode', mode);
         
-        // Notify the main process about the change with error handling
+        // Notify the main process about the change
         if (window.electronAPI?.screenshots?.setScreenshotMode) {
             try {
-                await window.electronAPI.screenshots.setScreenshotMode(mode);
-                console.log('Screenshot mode successfully set in main process:', mode);
+                const result = await window.electronAPI.screenshots.setScreenshotMode(mode);
+                console.log('Screenshot mode successfully set in main process:', mode, result);
+                return result;
             } catch (error) {
-                console.warn('Failed to set screenshot mode in main process (IPC handler may not be ready yet):', error);
-                // Retry after a short delay if the handler isn't ready
-                setTimeout(async () => {
-                    try {
-                        await window.electronAPI.screenshots.setScreenshotMode(mode);
-                        console.log('Screenshot mode successfully set in main process after retry:', mode);
-                    } catch (retryError) {
-                        console.error('Failed to set screenshot mode after retry:', retryError);
-                    }
-                }, 1000);
+                console.error('Failed to set screenshot mode:', error);
+                throw error;
             }
         }
     }
