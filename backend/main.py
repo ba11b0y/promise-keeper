@@ -264,10 +264,47 @@ async def extract_promises_from_file_authenticated(
         
         promises = rawPromiseOutput
         
-        # Save promises to database for authenticated user
+        # If we found promises, check against existing ones in the database
+        new_promises_to_save = []
+        if promises.promises:
+            try:
+                # Fetch all existing promises for this user
+                existing_promises_response = admin_client.table("promises").select("*").eq("owner_id", user_id).execute()
+                existing_promises_raw = existing_promises_response.data or []
+
+                print('existing_promises_raw', existing_promises_raw)
+                
+                # Convert existing promises to BAML Promise format
+                from baml_client.types import Promise as BAMLPromise
+                existing_promises_baml = []
+                for existing in existing_promises_raw:
+                    # Parse extraction_data to get original promise details
+                    extraction_data = json.loads(existing.get("extraction_data", "{}"))
+                    existing_promises_baml.append(BAMLPromise(
+                        content=existing["content"],
+                        reasoning=None,  # Don't need reasoning for existing promises
+                        to_whom=extraction_data.get("to_whom"),
+                        deadline=extraction_data.get("deadline")
+                    ))
+                
+                # Use BAML to filter out duplicates
+                logger.info(f"Auth endpoint - User {user_id} - Checking {len(promises.promises)} new promises against {len(existing_promises_baml)} existing promises")
+                filtered_promises: list[BAMLPromise] | None = b.CheckExistingPromises(promises.promises, existing_promises_baml)
+                if filtered_promises is None:
+                    filtered_promises = []
+                new_promises_to_save = filtered_promises
+                
+                logger.info(f"Auth endpoint - User {user_id} - After filtering: {len(new_promises_to_save)} new promises to save")
+                
+            except Exception as filter_error:
+                logger.error(f"Error filtering promises: {filter_error}")
+                # Fall back to saving all promises if filtering fails
+                new_promises_to_save = promises.promises
+        
+        # Save only the new promises to database
         saved_promises = []
         
-        for promise in promises.promises:
+        for promise in new_promises_to_save:
             try:
                 promise_data = {
                     "content": promise.content,
@@ -291,7 +328,7 @@ async def extract_promises_from_file_authenticated(
         
         return PromiseListResponse(promises=[
             {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
-            for p in promises.promises
+            for p in new_promises_to_save
         ])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")

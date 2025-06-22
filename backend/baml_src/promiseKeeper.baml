@@ -57,9 +57,69 @@ function ExtractPromises(userImage: image) -> PromiseListResponse| NoPromisesFou
   "#
 }
 
+function CheckExistingPromises(newPotentialPromises: Promise[], existingPromisesInDB: Promise[]) -> Promise[] | null {
+  client LlamaAPI
+  prompt #"
+    You are a promise keeper assistant that helps filter new promises against existing ones to avoid duplicates.
+
+    TASK: Compare the new potential promises from a screenshot against existing promises in the database. Return ONLY the genuinely NEW promises that should be added. If ALL new promises are duplicates, return an EMPTY ARRAY.
+
+    NEW POTENTIAL PROMISES from screenshot:
+    {{ newPotentialPromises }}
+
+    EXISTING PROMISES in database:
+    {{ existingPromisesInDB }}
+
+    DUPLICATE DETECTION CRITERIA:
+    A new promise is considered a DUPLICATE if it matches an existing promise on these key fields:
+    - **content** (the main promise text - exact or very similar meaning)
+    - **to_whom** (same recipient)  
+    - **deadline** (same or very similar timeframe)
+
+    FILTERING RULES:
+    1. **Exact duplicates**: If a new promise has the same content, recipient, and deadline as an existing one → EXCLUDE IT
+    2. **Similar promises**: If a new promise has very similar content and same recipient/deadline → EXCLUDE IT  
+    3. **Updated deadlines**: If same content/recipient but different deadline → INCLUDE IT (it's an update)
+    4. **Different recipients**: If same content/deadline but different recipient → INCLUDE IT
+    5. **Different content**: If different commitment but same recipient → INCLUDE IT
+
+    EXAMPLES:
+    - Existing: "I'll send the report by Friday" to "John" → New: "I'll send the report by Friday" to "John" = DUPLICATE (exclude)
+    - Existing: "I'll send the report by Friday" to "John" → New: "I'll get you that report by Friday" to "John" = DUPLICATE (exclude - same meaning)
+    - Existing: "I'll call mom this weekend" → New: "I'll call mom Sunday" = UPDATE (include - more specific deadline)
+    - Existing: "I'll review the document for John" → New: "I'll review the document for Sarah" = DIFFERENT (include - different recipient)
+
+    IMPORTANT: 
+    - If NO new promises pass the duplicate check, return an empty array []
+    - Only include promises from the new potential promises list that are genuinely different from existing ones
+    - The "reasoning" field should NOT be used for duplicate detection - focus on content, recipient, and deadline
+
+    {{ ctx.output_format }}
+  "#
+}
+
 test TestName {
   functions [ExtractPromises]
   args {
     userImage { url "https://imgs.xkcd.com/comics/standards.png" }
+  }
+}
+
+test TestName2 {
+  functions [CheckExistingPromises]
+  args {
+    newPotentialPromises[ {
+      content "I'll send the report by Friday"
+      reasoning "I'll get you that report by Friday"
+      to_whom "John"
+      deadline "2025-06-21"
+    }
+    ]
+    existingPromisesInDB [{
+      content "I'll send the report by Friday"
+      reasoning "I'll get you that report by Friday"
+      to_whom "John"
+      deadline "2025-06-21"
+    }]
   }
 }
