@@ -10,6 +10,38 @@ class Promise {
   deadline string? @description(#"
     When the promise should be fulfilled (could be specific date or relative time)
   "#)
+  potentialActionsToTake PotentialAction[] @description(#"
+    You have the opportunity to pass this agent with an Apple MCP server to take actions on the user's behalf.
+    If you think this is the case, you can pass the agent with the action you want to take, and the parameters you would need to pass to the agent to take that action.
+  "#)
+}
+
+class PotentialAction {
+  action Messages_MCP_Call | System_Launch_App | Calendar_Add
+  action_dependencies string? @description(#"
+    What info from the earlier actions you would need to accomplish this action
+  "#)
+  action_details string? @description(#"
+    Why you think this is the action, in this order, to take.
+  "#)
+}
+
+class Messages_MCP_Call {
+  tool_name "messages_compose_message"
+  recipient string
+  body string
+}
+
+class System_Launch_App {
+  tool_name "system_launch_app"
+  name string
+}
+
+class Calendar_Add {
+  tool_name "calendar_add"
+  title string
+  startDate string
+  endDate string
 }
 
 class ResolvedPromise {

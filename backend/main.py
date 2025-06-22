@@ -247,6 +247,8 @@ async def extract_promises_from_file_authenticated(
         from baml_client.types import PromiseListResponse as BAMLPromiseListResponse, NoPromisesFoundResponse
         
         rawPromiseOutput = b.ExtractPromises(baml_image)
+
+        print('rawPromiseOutput', rawPromiseOutput.model_dump_json())
         
         user_id = current_user.get("user_id", current_user.get("sub", ""))
         
@@ -330,6 +332,26 @@ async def extract_promises_from_file_authenticated(
         
         for promise in new_promises_to_save:
             try:
+                # Debug: Let's see what we're working with
+                print(f"Promise object: {promise}")
+                print(f"Promise potentialActionsToTake: {promise.potentialActionsToTake}")
+                print(f"Promise reasoning: {promise.reasoning}")
+                
+                # Convert the promise to dict to easily serialize potential actions
+                promise_dict = promise.model_dump() if hasattr(promise, 'model_dump') else promise.__dict__
+                
+                # Prepare metadata
+                metadata = {}
+                
+                # Add reasoning if present
+                if promise.reasoning:
+                    metadata["reasoning"] = promise.reasoning
+                
+                # Add potential actions if present
+                if promise.potentialActionsToTake:
+                    metadata["potential_actions"] = promise_dict.get("potentialActionsToTake", [])
+                    print(f"Storing potential actions: {metadata['potential_actions']}")
+                
                 promise_data = {
                     "content": promise.content,
                     "owner_id": user_id,
@@ -340,8 +362,11 @@ async def extract_promises_from_file_authenticated(
                         "to_whom": promise.to_whom,
                         "deadline": promise.deadline,
                         "raw_promise": promise.content
-                    })
+                    }),
+                    "metadata": json.dumps(metadata) if metadata else None
                 }
+                
+                print(f"Final promise_data metadata: {promise_data['metadata']}")
                 
                 response = admin_client.table("promises").insert(promise_data).execute()
                 if response.data:
@@ -369,15 +394,28 @@ async def extract_promises_from_file_authenticated(
                             logger.info(f"Auth endpoint - User {user_id} - LLM says this promise is resolved: '{resolved_promise.original_promise.content}'")
                             
                             # Simply find the promise by content - trust the LLM's decision completely
+                            # First, get the existing promise to preserve metadata
+                            existing_promise_response = admin_client.table("promises").select("metadata").eq("owner_id", user_id).eq("content", resolved_promise.original_promise.content).eq("resolved", False).execute()
+                            
+                            existing_metadata = {}
+                            if existing_promise_response.data and existing_promise_response.data[0].get("metadata"):
+                                try:
+                                    existing_metadata = json.loads(existing_promise_response.data[0]["metadata"])
+                                except json.JSONDecodeError:
+                                    existing_metadata = {}
+                            
+                            # Merge resolution info with existing metadata
+                            updated_metadata = {**existing_metadata}
+                            updated_metadata["resolution_evidence"] = resolved_promise.resolution_evidence
+                            updated_metadata["resolution_reasoning"] = resolved_promise.resolution_reasoning
+                            
                             update_response = admin_client.table("promises").update({
                                 "resolved": True,
                                 "resolved_screenshot_id": screenshot_id,
                                 "resolved_screenshot_time": screenshot_timestamp,
                                 "resolved_reason": resolved_promise.resolution_reasoning,
                                 "updated_at": "now()",
-                                "metadata": json.dumps({
-                                    "resolution_evidence": resolved_promise.resolution_evidence
-                                }) if resolved_promise.resolution_evidence else None
+                                "metadata": json.dumps(updated_metadata) if updated_metadata else None
                             }).eq("owner_id", user_id).eq("content", resolved_promise.original_promise.content).eq("resolved", False).execute()
                             
                             if update_response.data:
