@@ -7,6 +7,9 @@ class ScreenshotManager {
         this.manualScreenshotRequested = false; // Flag for manual screenshots
         this.lastEnterScreenshot = 0; // Track last enter screenshot time
         this.enterScreenshotCooldown = 60000; // 1 minute cooldown for enter mode
+        
+        // Initialize action handlers
+        this.actionHandlers = new window.PromiseKeeperActionHandlers(app);
     }
 
     async uploadScreenshot() {
@@ -55,16 +58,24 @@ class ScreenshotManager {
             if (apiResponse.ok) {
                 console.log('API Response:', result); // Debug log to see the structure
                 
-                const hasNewPromises = result.promises && result.promises.length > 0;
-                const hasResolvedPromises = result.resolved_promises && result.resolved_promises.length > 0;
+                // Process potential actions using our types utility
+                const processedResult = window.PromiseKeeperTypes.processApiResponse(result);
+                
+                const hasNewPromises = processedResult.has_new_promises;
+                const hasResolvedPromises = processedResult.has_resolved_promises;
                 
                 if (hasNewPromises || hasResolvedPromises) {
+                    // Execute MCP actions if found
+                    if (hasNewPromises) {
+                        await this.processMCPActions(processedResult.promises);
+                    }
+                    
                     // Build comprehensive message
                     let message = '';
                     
                     if (hasNewPromises) {
                         // Extract text from promise objects for display
-                        const promiseTexts = result.promises.map(promise => {
+                        const promiseTexts = processedResult.promises.map(promise => {
                             // Handle different possible response formats
                             if (typeof promise === 'string') {
                                 return promise;
@@ -80,7 +91,7 @@ class ScreenshotManager {
                             }
                         });
 
-                        message += `✅ Found and saved ${result.promises.length} new promise${result.promises.length > 1 ? 's' : ''}:\n`;
+                        message += `✅ Found and saved ${processedResult.promises.length} new promise${processedResult.promises.length > 1 ? 's' : ''}:\n`;
                         promiseTexts.forEach((promise, index) => {
                             const shortPromise = promise.length > 60 ? promise.substring(0, 60) + '...' : promise;
                             message += `${index + 1}. ${shortPromise}\n`;
@@ -89,8 +100,8 @@ class ScreenshotManager {
                     
                     if (hasResolvedPromises) {
                         if (hasNewPromises) message += '\n';
-                        message += `🎉 Resolved ${result.resolved_count} promise${result.resolved_count > 1 ? 's' : ''}:\n`;
-                        result.resolved_promises.forEach((resolvedPromise, index) => {
+                        message += `🎉 Resolved ${processedResult.resolved_count} promise${processedResult.resolved_count > 1 ? 's' : ''}:\n`;
+                        processedResult.resolved_promises.forEach((resolvedPromise, index) => {
                             const shortPromise = resolvedPromise.content.length > 60 ? resolvedPromise.content.substring(0, 60) + '...' : resolvedPromise.content;
                             message += `${index + 1}. ${shortPromise}\n`;
                         });
@@ -176,6 +187,19 @@ class ScreenshotManager {
                 if (hasNewPromises) {
                     console.log('Found new promises in screenshot:', result.promises);
                     
+                    // Process potential actions using our types utility
+                    const processedResult = window.PromiseKeeperTypes.processApiResponse(result);
+                    
+                    console.log('Processed result:', processedResult);
+                    console.log('Has new promises:', processedResult.has_new_promises);
+                    console.log('Processed promises:', processedResult.promises);
+                    
+                    // Execute MCP actions if found
+                    if (processedResult.has_new_promises) {
+                        console.log('About to process MCP actions...');
+                        await this.processMCPActions(processedResult.promises);
+                    }
+                    
                     // Save the screenshot permanently since it contains promises
                     const savedScreenshotPath = await window.electronAPI.screenshots.savePromiseScreenshot(
                         data.screenshotId, 
@@ -227,6 +251,54 @@ class ScreenshotManager {
             }
         } catch (error) {
             console.error('Error processing screenshot for promises:', error);
+        }
+    }
+
+    /**
+     * Process and execute MCP actions found in promises
+     * @param {Array} promises - Array of processed promises with potential actions
+     */
+    async processMCPActions(promises) {
+        console.log('processMCPActions called with:', promises);
+        
+        if (!promises || !Array.isArray(promises)) {
+            console.log('No promises provided or not an array');
+            return;
+        }
+
+        let totalMCPActions = 0;
+        let executedMCPActions = 0;
+
+        for (const promise of promises) {
+            console.log('Checking promise:', promise);
+            console.log('Promise has_mcp_actions:', promise.has_mcp_actions);
+            console.log('Promise mcp_actions:', promise.mcp_actions);
+            
+            if (promise.has_mcp_actions) {
+                console.log(`Processing MCP actions for promise: "${promise.content}"`);
+                
+                for (const action of promise.mcp_actions) {
+                    totalMCPActions++;
+                    console.log('Found MCP action:', action);
+                    
+                    try {
+                        // Execute the MCP action (this will trigger our console.log statements)
+                        const success = await this.actionHandlers.executeActionWithConfirmation(action, true); // Skip confirmation for automated actions
+                        
+                        if (success) {
+                            executedMCPActions++;
+                        }
+                    } catch (error) {
+                        console.error('Error executing MCP action:', error);
+                    }
+                }
+            }
+        }
+
+        if (totalMCPActions > 0) {
+            console.log(`MCP Actions Summary: ${executedMCPActions}/${totalMCPActions} actions executed successfully`);
+        } else {
+            console.log('No MCP actions found to execute');
         }
     }
 

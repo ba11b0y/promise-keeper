@@ -127,7 +127,12 @@ async def extract_promises_from_file(file: UploadFile = File(...)):
                 logger.info(f"Promise {i+1} reasoning: {promise.reasoning}")
         
         return PromiseListResponse(promises=[
-            {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
+            {
+                "content": p.content, 
+                "to_whom": p.to_whom, 
+                "deadline": p.deadline,
+                "potential_actions": p.potentialActionsToTake if hasattr(p, 'potentialActionsToTake') and p.potentialActionsToTake else []
+            } 
             for p in promises.promises
         ])
     except Exception as e:
@@ -166,7 +171,12 @@ async def extract_promises_from_base64(request: ImageBase64Request):
                 logger.info(f"Promise {i+1} reasoning: {promise.reasoning}")
         
         return PromiseListResponse(promises=[
-            {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
+            {
+                "content": p.content, 
+                "to_whom": p.to_whom, 
+                "deadline": p.deadline,
+                "potential_actions": p.potentialActionsToTake if hasattr(p, 'potentialActionsToTake') and p.potentialActionsToTake else []
+            } 
             for p in promises.promises
         ])
     except Exception as e:
@@ -340,17 +350,12 @@ async def extract_promises_from_file_authenticated(
                 # Convert the promise to dict to easily serialize potential actions
                 promise_dict = promise.model_dump() if hasattr(promise, 'model_dump') else promise.__dict__
                 
-                # Prepare metadata
-                metadata = {}
-                
-                # Add reasoning if present
-                if promise.reasoning:
-                    metadata["reasoning"] = promise.reasoning
+                potential_actions_data = []
                 
                 # Add potential actions if present
                 if promise.potentialActionsToTake:
-                    metadata["potential_actions"] = promise_dict.get("potentialActionsToTake", [])
-                    print(f"Storing potential actions: {metadata['potential_actions']}")
+                    potential_actions_data = promise_dict.get("potentialActionsToTake", [])
+                    print(f"Storing potential actions: {potential_actions_data}")
                 
                 promise_data = {
                     "content": promise.content,
@@ -363,10 +368,10 @@ async def extract_promises_from_file_authenticated(
                         "deadline": promise.deadline,
                         "raw_promise": promise.content
                     }),
-                    "metadata": json.dumps(metadata) if metadata else None
+                    "potential_actions": json.dumps(potential_actions_data) if potential_actions_data else None
                 }
                 
-                print(f"Final promise_data metadata: {promise_data['metadata']}")
+                print(f"Final promise_data potential_actions: {promise_data['potential_actions']}")
                 
                 response = admin_client.table("promises").insert(promise_data).execute()
                 if response.data:
@@ -455,7 +460,12 @@ async def extract_promises_from_file_authenticated(
         
         return PromiseListResponse(
             promises=[
-                {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
+                {
+                    "content": p.content, 
+                    "to_whom": p.to_whom, 
+                    "deadline": p.deadline,
+                    "potential_actions": p.potentialActionsToTake if hasattr(p, 'potentialActionsToTake') and p.potentialActionsToTake else []
+                } 
                 for p in new_promises_to_save
             ],
             resolved_promises=resolved_promises_info,
