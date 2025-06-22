@@ -41,7 +41,7 @@ class PromiseManager {
             if (window.electronAPI?.notifications) {
                 window.electronAPI.notifications.show(
                     'Promise Added',
-                    `New promise: ${content}`
+                    `${content}`
                 );
             }
         }
