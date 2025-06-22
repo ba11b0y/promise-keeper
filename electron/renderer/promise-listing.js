@@ -510,23 +510,8 @@ class PromiseListingPage {
     }
 
     renderResolutionInfo(promise) {
-        if (!promise.resolved) return '';
-        
-        const resolvedDate = this.formatDate(promise.resolved_screenshot_time || promise.updated_at);
-        const reason = promise.resolved_reason || '';
-        
-        return `
-            <div class="resolution-info">
-                <span class="resolved-status">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <polyline points="20,6 9,17 4,12"/>
-                    </svg>
-                    Resolved
-                </span>
-                <span class="resolved-date">${resolvedDate}</span>
-                ${reason ? `<div class="resolved-reason" title="${this.escapeHtml(reason)}">${this.escapeHtml(reason.length > 80 ? reason.substring(0, 80) + '...' : reason)}</div>` : ''}
-            </div>
-        `;
+        // Don't render any resolution info - just return empty string
+        return '';
     }
 
     renderEmptyState() {
