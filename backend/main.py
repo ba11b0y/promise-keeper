@@ -361,17 +361,7 @@ async def extract_promises_from_file_authenticated(
                 print(f"Promise object: {promise}")
                 print(f"Promise action: {promise.action}")
                 print(f"Promise reasoning: {promise.reasoning}")
-                
-                # Convert the promise to dict to easily serialize potential actions
-                # promise_dict = promise.model_dump() if hasattr(promise, 'model_dump') else promise.__dict__
-                
-                # potential_actions_data = []
-                
-                # Add potential actions if present
-                # if promise.potentialActionsToTake:
-                #     potential_actions_data = promise_dict.get("potentialActionsToTake", [])
-                #     print(f"Storing potential actions: {potential_actions_data}")
-                
+
                 promise_data = {
                     "content": promise.content,
                     "owner_id": user_id,
@@ -383,10 +373,10 @@ async def extract_promises_from_file_authenticated(
                         "deadline": promise.deadline,
                         "raw_promise": promise.content
                     }),
-                    "action": promise.action.model_dump() if getattr(promise, 'action', None) else None
+                    "action": json.dumps(promise.action.model_dump()) if getattr(promise, 'action', None) else None
                 }
                 
-                # print(f"Final promise_data potential_actions: {promise_data['potential_actions']}")
+                print(f"Final promise_data being sent to Supabase: {json.dumps(promise_data, indent=2)}")
                 
                 response = admin_client.table("promises").insert(promise_data).execute()
                 if response.data:

@@ -90,23 +90,69 @@ export class NotificationProcessor {
             // Wait a moment for the app to launch
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // For now, we'll create an event for tomorrow at a reasonable time
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(10, 0, 0); // Set to 10:00 AM
+            // Use start date from metadata or fallback to tomorrow if not provided
+            let startDateTime = new Date();
+            if (notification.metadata?.action?.start_time) {
+                // Parse the date but keep the intended local hour (8 AM)
+                const utcDate = new Date(notification.metadata.action.start_time);
 
-            const endTime = new Date(tomorrow);
-            endTime.setHours(11, 0, 0); // Set to 11:00 AM (1-hour duration)
+                // Create a date string in Pacific Time
+                const year = utcDate.getUTCFullYear();
+                const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(utcDate.getUTCDate()).padStart(2, '0');
 
-            // Format dates for calendar
-            const startDate = tomorrow.toISOString().replace('T', ' ').slice(0, 19);
-            const endDate = endTime.toISOString().replace('T', ' ').slice(0, 19);
+                // Use 8 AM in Pacific Time
+                startDateTime = new Date(`${year}-${month}-${day}T08:00:00-07:00`);
 
-            console.log('[NotificationProcessor] 📅 Creating calendar event');
+                console.log('[NotificationProcessor] Using start time from metadata:', {
+                    originalUTC: notification.metadata.action.start_time,
+                    parsedDate: startDateTime.toISOString(),
+                    localTime: startDateTime.toString()
+                });
+            } else {
+                // Fallback to tomorrow at 10 AM Pacific Time
+                const now = new Date();
+                startDateTime = new Date(now.getTime() + (24 * 60 * 60 * 1000)); // add 24 hours
+                startDateTime.setHours(10, 0, 0);
+            }
+
+            // Set end time to 1 hour after start time
+            const endDateTime = new Date(startDateTime);
+            endDateTime.setHours(endDateTime.getHours() + 1);
+
+            // Format dates for calendar in Pacific Time
+            const formatToPacificTime = (date: Date) => {
+                // Get the UTC timestamp
+                const utcTime = date.getTime();
+
+                // Create a formatter for Pacific Time
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/Los_Angeles',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+
+                // Format the date and clean it up
+                return formatter.format(utcTime).replace(',', '');
+            };
+
+            const startDate = formatToPacificTime(startDateTime);
+            const endDate = formatToPacificTime(endDateTime);
+
+            console.log('[NotificationProcessor] 📅 Creating calendar event (Pacific Time)');
             console.log('[NotificationProcessor] Event details:', {
                 title: notification.body,
                 startDate,
-                endDate
+                endDate,
+                originalMetadata: notification.metadata,
+                originalStartDateTime: startDateTime.toISOString(),
+                utcHours: startDateTime.getUTCHours(),
+                localHours: startDateTime.getHours()
             });
 
             // Create the calendar event using MCP client

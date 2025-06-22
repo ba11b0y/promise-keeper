@@ -14,7 +14,7 @@ class Promise {
     You have the opportunity to pass this agent with an Apple MCP server to take actions on the user's behalf.
     If you think this is the case, you can pass the agent with the action you want to take, and the parameters you would need to pass to the agent to take that action.
   "#)
-}
+} 
 
 enum ActionType {
   // Messages_compose_message @description(#"
@@ -26,10 +26,18 @@ enum ActionType {
   Calendar_Add @description(#"
     calendar_add
   "#)
+  NoAction @description(#"
+    No action needed
+  "#)
 }
 
 class Action {
-  actionType ActionType
+  actionType ActionType @description(#"
+    The type of action to take based on the promise
+    For example, if the promise mentions something like "Do you want me to schedule a meeting tomorrow at 8?"
+    tyou might want to use Calendar_Add to add an event to the calendar.
+    But if you don't see any action to take, you can use NoAction.
+  "#)
   start_time string? @description(#"
     When the action should start (if applicable), format it in datetime format (e.g., "2025-06-21T20:00:00Z")
   "#)
@@ -38,6 +46,9 @@ class Action {
   "#)
   whom_to string? @description(#"
     Who the action is directed to (if applicable), usually the top of the window contains the name of the person or entity
+  "#)
+  app_name string? @description(#"
+    The name of the app to launch if the action is to launch an app, for example, "Spotify", "Discord", etc.
   "#)
 }
 
@@ -101,7 +112,10 @@ function ExtractPromises(userImage: image) -> PromiseListResponse| NoPromisesFou
 
     Only extract promises from communication contexts where the user is actively making a commitment to someone else that they might forget about.
 
-    IMPORTANT: If you see the Promise Keeper application itself (showing existing promises, app interface, settings, etc.), IGNORE everything in it. Do not extract any promises from the Promise Keeper app interface to avoid recursive issues.
+    IMPORTANT: If you see the Promise Keeper application itself (showing existing promises, app interface, settings, etc.), IGNORE everything in it.
+    Do not extract any promises from the Promise Keeper app interface to avoid recursive issues.
+    Do not consider duplicate texts as two different promises, even if they are repeated in the screenshot.
+    Also, make sure that you check the last of the messages in the screenshot to get the latest promises made by the user.
 
     If you see normal browsing, working, or any content without clear interpersonal commitments, return NoPromisesFoundResponse.
 
@@ -261,7 +275,7 @@ function CheckResolvedPromises(userImage: image, existingPromises: Promise[]) ->
 test TestName {
   functions [ExtractPromises]
   args {
-    userImage { url "https://imgs.xkcd.com/comics/standards.png" }
+    userImage { url "https://i.postimg.cc/ZYN8vMzd/Screenshot-2025-06-22-at-8-44-35-AM.png" }
   }
 }
 
@@ -282,14 +296,15 @@ test TestName2 {
     },
     ]
     existingPromisesInDB [{
-      content "I'll send the report by Friday"
-      reasoning "I'll get you that report by Friday"
+      content "I'll send you the playlist in a minute"
+      reasoning "The user promised to send a playlist"
       to_whom "John"
       deadline "2025-06-21"
       action {
-        actionType Messages_compose_message
+        actionType System_Launch_App
         action_dependencies "recipient, body"
         action_details "I'll send the report by Friday"
+        app_name "Spotify"
       }
     }]
   }
