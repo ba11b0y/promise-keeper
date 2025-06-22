@@ -240,18 +240,8 @@ class ScreenshotManager {
                         await this.app.promises.loadPromises();
                     }
 
-                    // Create comprehensive notification message
-                    let notificationMessage = '';
-                    if (hasNewPromises && hasResolvedPromises) {
-                        notificationMessage = `Found ${result.promises.length} new promise${result.promises.length > 1 ? 's' : ''} and resolved ${result.resolved_count} promise${result.resolved_count > 1 ? 's' : ''}!`;
-                    } else if (hasNewPromises) {
-                        notificationMessage = `Found ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''} in your screen and saved to database!`;
-                    } else if (hasResolvedPromises) {
-                        notificationMessage = `Resolved ${result.resolved_count} promise${result.resolved_count > 1 ? 's' : ''} from your screen!`;
-                    }
-
                     // Show notification through main process
-                    if (window.electronAPI?.notifications && notificationMessage) {
+                    if (window.electronAPI?.notifications) {
                         // Attempt to pass metadata from the first detected promise (if any)
                         let metadata = undefined;
                         if (result.promises && result.promises.length > 0) {
@@ -262,7 +252,7 @@ class ScreenshotManager {
                                 to_whom: firstPromise.to_whom ? String(firstPromise.to_whom) : undefined
                             };
                         }
-                        window.electronAPI.notifications.show('Promise Keeper', notificationMessage, metadata);
+                        window.electronAPI.notifications.show('Promise Keeper', result.promises[0].content, metadata);
                     }
 
                     // Show enhanced indicator for new promises
