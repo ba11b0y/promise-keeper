@@ -332,7 +332,8 @@ async def extract_promises_from_file_authenticated(
                         reasoning=None,  # Don't need reasoning for existing promises
                         to_whom=extraction_data.get("to_whom"),
                         deadline=extraction_data.get("deadline"),
-                        action=baml_action_obj
+                        action=baml_action_obj,
+                        how_sure=True
                     ))
                 
                 # Use BAML to evaluate each promise individually
