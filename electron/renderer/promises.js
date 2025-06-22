@@ -102,17 +102,47 @@ class PromiseManager {
 
         container.innerHTML = this.promises.map(promise => {
             const isFromScreenshot = promise.extracted_from_screenshot && promise.screenshot_id;
-            const screenshotIndicator = isFromScreenshot ? 
-                `<span class="screenshot-indicator" onclick="app.screenshots.viewScreenshot('${promise.screenshot_id}')" title="Click to view source screenshot">
-                    📸 From screenshot
+            const isResolved = promise.resolved;
+            
+            // Create screenshot indicators
+            const initialScreenshotIndicator = isFromScreenshot ? 
+                `<span class="screenshot-indicator initial" onclick="app.screenshots.viewScreenshot('${promise.screenshot_id}')" title="Click to view source screenshot">
+                    📸 Initial
                 </span>` : '';
             
+            const resolvedScreenshotIndicator = isResolved && promise.resolved_screenshot_id ? 
+                `<span class="screenshot-indicator resolved" onclick="app.screenshots.viewScreenshot('${promise.resolved_screenshot_id}')" title="Click to view resolution screenshot">
+                    ✅ Resolved
+                </span>` : '';
+            
+            // Create resolution info
+            const resolutionInfo = isResolved ? 
+                `<div class="resolution-info">
+                    <span class="resolved-status">✅ Resolved</span>
+                    <span class="resolved-date">${this.formatDate(promise.resolved_screenshot_time || promise.updated_at)}</span>
+                    ${promise.resolved_reason ? 
+                        `<div class="resolved-reason" title="${this.escapeHtml(promise.resolved_reason)}">
+                            ${this.escapeHtml(promise.resolved_reason.length > 80 ? promise.resolved_reason.substring(0, 80) + '...' : promise.resolved_reason)}
+                        </div>` : ''
+                    }
+                </div>` : '';
+            
+            const promiseItemClasses = [
+                'promise-item',
+                isFromScreenshot ? 'from-screenshot' : '',
+                isResolved ? 'resolved' : ''
+            ].filter(c => c).join(' ');
+            
             return `
-                <div class="promise-item ${isFromScreenshot ? 'from-screenshot' : ''}">
+                <div class="${promiseItemClasses}">
                     <div class="promise-content">${this.escapeHtml(promise.content)}</div>
+                    ${resolutionInfo}
                     <div class="promise-meta">
                         <span class="promise-date">${this.formatDate(promise.created_at)}</span>
-                        ${screenshotIndicator}
+                        <div class="screenshot-indicators">
+                            ${initialScreenshotIndicator}
+                            ${resolvedScreenshotIndicator}
+                        </div>
                         <button class="delete-btn" onclick="app.promises.deletePromise(${promise.id})">×</button>
                     </div>
                 </div>
@@ -191,6 +221,25 @@ class PromiseManager {
     formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+
+    // Test method for resolved promises - can be removed in production
+    addTestResolvedPromise() {
+        if (!this.promises || this.promises.length === 0) return;
+        
+        // Mock a resolved promise for testing
+        const testPromise = {
+            ...this.promises[0],
+            id: this.promises[0].id + 1000, // Avoid ID conflicts
+            resolved: true,
+            resolved_screenshot_id: 'test_resolved_screenshot_123',
+            resolved_screenshot_time: new Date().toISOString(),
+            resolved_reason: 'Test: Email was sent successfully as evidenced by the sent confirmation dialog.'
+        };
+        
+        this.promises.unshift(testPromise);
+        this.renderPromises();
+        console.log('Added test resolved promise for UI testing');
     }
 }
 

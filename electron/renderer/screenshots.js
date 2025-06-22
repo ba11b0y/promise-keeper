@@ -55,36 +55,53 @@ class ScreenshotManager {
             if (apiResponse.ok) {
                 console.log('API Response:', result); // Debug log to see the structure
                 
-                // Display the extracted promises
-                if (result.promises && result.promises.length > 0) {
-                    // Extract text from promise objects for display
-                    const promiseTexts = result.promises.map(promise => {
-                        // Handle different possible response formats
-                        if (typeof promise === 'string') {
-                            return promise;
-                        } else if (promise.text) {
-                            return promise.text;
-                        } else if (promise.content) {
-                            return promise.content;
-                        } else if (promise.promise) {
-                            return promise.promise;
-                        } else {
-                            // Fallback: convert object to string or use first property
-                            return JSON.stringify(promise);
-                        }
-                    });
+                const hasNewPromises = result.promises && result.promises.length > 0;
+                const hasResolvedPromises = result.resolved_promises && result.resolved_promises.length > 0;
+                
+                if (hasNewPromises || hasResolvedPromises) {
+                    // Build comprehensive message
+                    let message = '';
+                    
+                    if (hasNewPromises) {
+                        // Extract text from promise objects for display
+                        const promiseTexts = result.promises.map(promise => {
+                            // Handle different possible response formats
+                            if (typeof promise === 'string') {
+                                return promise;
+                            } else if (promise.text) {
+                                return promise.text;
+                            } else if (promise.content) {
+                                return promise.content;
+                            } else if (promise.promise) {
+                                return promise.promise;
+                            } else {
+                                // Fallback: convert object to string or use first property
+                                return JSON.stringify(promise);
+                            }
+                        });
 
-                    let message = `✅ Found and saved ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''}:\n`;
-                    promiseTexts.forEach((promise, index) => {
-                        const shortPromise = promise.length > 60 ? promise.substring(0, 60) + '...' : promise;
-                        message += `${index + 1}. ${shortPromise}\n`;
-                    });
+                        message += `✅ Found and saved ${result.promises.length} new promise${result.promises.length > 1 ? 's' : ''}:\n`;
+                        promiseTexts.forEach((promise, index) => {
+                            const shortPromise = promise.length > 60 ? promise.substring(0, 60) + '...' : promise;
+                            message += `${index + 1}. ${shortPromise}\n`;
+                        });
+                    }
+                    
+                    if (hasResolvedPromises) {
+                        if (hasNewPromises) message += '\n';
+                        message += `🎉 Resolved ${result.resolved_count} promise${result.resolved_count > 1 ? 's' : ''}:\n`;
+                        result.resolved_promises.forEach((resolvedPromise, index) => {
+                            const shortPromise = resolvedPromise.content.length > 60 ? resolvedPromise.content.substring(0, 60) + '...' : resolvedPromise.content;
+                            message += `${index + 1}. ${shortPromise}\n`;
+                        });
+                    }
+                    
                     window.PromiseKeeperUI.showUploadMessage(message, 'success');
 
-                    // Reload the promises list to show the newly saved promises
+                    // Reload the promises list to show updates
                     await this.app.promises.loadPromises();
                 } else {
-                    window.PromiseKeeperUI.showUploadMessage('No promises found in the image.', 'info');
+                    window.PromiseKeeperUI.showUploadMessage('No new promises found or resolved in the image.', 'info');
                 }
             } else {
                 window.PromiseKeeperUI.showUploadMessage(`Error: ${result.detail || 'Unknown error'}`, 'error');
@@ -146,31 +163,52 @@ class ScreenshotManager {
 
             const result = await apiResponse.json();
 
-            if (apiResponse.ok && result.promises && result.promises.length > 0) {
-                console.log('Found promises in screenshot:', result.promises);
+            if (apiResponse.ok) {
+                console.log('Screenshot processing result:', result);
                 
-                // Save the screenshot permanently since it contains promises
-                const savedScreenshotPath = await window.electronAPI.screenshots.savePromiseScreenshot(
-                    data.screenshotId, 
-                    result.promises
-                );
+                const hasNewPromises = result.promises && result.promises.length > 0;
+                const hasResolvedPromises = result.resolved_promises && result.resolved_promises.length > 0;
                 
-                console.log('Promise screenshot saved to:', savedScreenshotPath);
-                
-                // Since we're using the authenticated endpoint, promises are automatically saved to the database
-                // Just reload the promises list to show the newly created ones
-                await this.app.promises.loadPromises();
-
-                // Show notification through main process
-                if (window.electronAPI?.notifications) {
-                    window.electronAPI.notifications.show(
-                        'Promise Keeper',
-                        `Found ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''} in your screen and saved to database!`
+                if (hasNewPromises) {
+                    console.log('Found new promises in screenshot:', result.promises);
+                    
+                    // Save the screenshot permanently since it contains promises
+                    const savedScreenshotPath = await window.electronAPI.screenshots.savePromiseScreenshot(
+                        data.screenshotId, 
+                        result.promises
                     );
+                    
+                    console.log('Promise screenshot saved to:', savedScreenshotPath);
                 }
+                
+                if (hasResolvedPromises) {
+                    console.log('Found resolved promises in screenshot:', result.resolved_promises);
+                }
+                
+                if (hasNewPromises || hasResolvedPromises) {
+                    // Reload the promises list to show updates (both new and resolved)
+                    await this.app.promises.loadPromises();
 
-                // Show enhanced indicator (without individual promise creation)
-                window.PromiseKeeperUI.showAutoPromiseCreatedIndicator(result.promises, data.screenshotId);
+                    // Create comprehensive notification message
+                    let notificationMessage = '';
+                    if (hasNewPromises && hasResolvedPromises) {
+                        notificationMessage = `Found ${result.promises.length} new promise${result.promises.length > 1 ? 's' : ''} and resolved ${result.resolved_count} promise${result.resolved_count > 1 ? 's' : ''}!`;
+                    } else if (hasNewPromises) {
+                        notificationMessage = `Found ${result.promises.length} promise${result.promises.length > 1 ? 's' : ''} in your screen and saved to database!`;
+                    } else if (hasResolvedPromises) {
+                        notificationMessage = `Resolved ${result.resolved_count} promise${result.resolved_count > 1 ? 's' : ''} from your screen!`;
+                    }
+
+                    // Show notification through main process
+                    if (window.electronAPI?.notifications && notificationMessage) {
+                        window.electronAPI.notifications.show('Promise Keeper', notificationMessage);
+                    }
+
+                    // Show enhanced indicator for new promises
+                    if (hasNewPromises) {
+                        window.PromiseKeeperUI.showAutoPromiseCreatedIndicator(result.promises, data.screenshotId);
+                    }
+                }
             } else if (!apiResponse.ok) {
                 console.error('API error processing screenshot:', result);
             }
@@ -296,18 +334,79 @@ class ScreenshotManager {
                     background: #f8fff8;
                 }
                 
-                .screenshot-indicator {
-                    color: #4CAF50;
-                    font-size: 12px;
-                    cursor: pointer;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    background: rgba(76, 175, 80, 0.1);
-                    margin-left: 8px;
+                .promise-item.resolved {
+                    border-left: 4px solid #2196F3;
+                    background: #f3f8ff;
+                    opacity: 0.8;
                 }
                 
-                .screenshot-indicator:hover {
+                .promise-item.resolved .promise-content {
+                    text-decoration: line-through;
+                    color: #666;
+                }
+                
+                .screenshot-indicator {
+                    font-size: 11px;
+                    cursor: pointer;
+                    padding: 3px 6px;
+                    border-radius: 4px;
+                    margin-left: 4px;
+                    transition: all 0.2s;
+                    display: inline-block;
+                }
+                
+                .screenshot-indicator.initial {
+                    color: #4CAF50;
+                    background: rgba(76, 175, 80, 0.1);
+                    border: 1px solid rgba(76, 175, 80, 0.2);
+                }
+                
+                .screenshot-indicator.initial:hover {
                     background: rgba(76, 175, 80, 0.2);
+                }
+                
+                .screenshot-indicator.resolved {
+                    color: #2196F3;
+                    background: rgba(33, 150, 243, 0.1);
+                    border: 1px solid rgba(33, 150, 243, 0.2);
+                }
+                
+                .screenshot-indicator.resolved:hover {
+                    background: rgba(33, 150, 243, 0.2);
+                }
+                
+                .screenshot-indicators {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                
+                .resolution-info {
+                    margin: 8px 0;
+                    padding: 8px;
+                    background: rgba(33, 150, 243, 0.05);
+                    border-radius: 6px;
+                    border-left: 3px solid #2196F3;
+                }
+                
+                .resolved-status {
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #2196F3;
+                    margin-right: 8px;
+                }
+                
+                .resolved-date {
+                    font-size: 11px;
+                    color: #666;
+                    font-style: italic;
+                }
+                
+                .resolved-reason {
+                    font-size: 11px;
+                    color: #555;
+                    margin-top: 4px;
+                    line-height: 1.3;
                 }
                 
                 .promise-meta {

@@ -12,8 +12,32 @@ class Promise {
   "#)
 }
 
+class ResolvedPromise {
+  original_promise Promise @description(#"
+    The original promise that has been resolved
+  "#)
+  resolution_reasoning string @description(#"
+    Detailed explanation of why this promise is considered resolved based on what was observed in the image
+  "#)
+  resolution_evidence string? @description(#"
+    Specific evidence from the image that shows the promise was fulfilled (e.g., "sent email confirmation", "meeting completed", etc.)
+  "#)
+}
+
 class PromiseListResponse {
   promises Promise[]
+}
+
+class ResolvedPromisesResponse {
+  resolved_promises ResolvedPromise[] @description(#"
+    List of promises that have been resolved based on the screenshot analysis
+  "#)
+}
+
+class NoPromisesResolvedResponse {
+  reason string? @description(#"
+    The reason why no promises were detected as resolved in this image
+  "#)
 }
 
 class NoPromisesFoundResponse {
@@ -152,6 +176,56 @@ enum ShouldSaveNewPromiseEnum {
   DEFINITELY_SAVE
   DEFINITELY_NOT_SAVE
   POSSIBLY_SAVE
+}
+
+function CheckResolvedPromises(userImage: image, existingPromises: Promise[]) -> ResolvedPromisesResponse | NoPromisesResolvedResponse {
+  client LlamaAPI
+  prompt #"
+    You are a promise keeper assistant that monitors screenshots to detect when users have fulfilled their commitments to others.
+
+    CONTEXT: This screenshot is from a user's screen monitoring system. You need to analyze the image to see if any of the user's existing promises have been resolved/fulfilled.
+
+    EXISTING PROMISES TO CHECK:
+    {{ existingPromises }}
+
+    WHAT COUNTS AS PROMISE RESOLUTION:
+    - **Email/Message sent**: Screenshot shows the user sent an email, text, or message that fulfills a communication promise
+    - **Meeting completed**: Evidence of a meeting or call that was promised
+    - **Document delivered**: Screenshots showing files being shared, reports being sent, or documents being completed
+    - **Task completion**: Clear evidence that a promised task or deliverable has been finished
+    - **Follow-up actions**: Screenshots showing the user taking the specific action they promised
+
+    WHAT TO LOOK FOR:
+    - Sent emails/messages with content related to promises
+    - Completed calendar events or meetings
+    - File sharing or document delivery activities  
+    - Applications showing task completion
+    - Any interface showing the user has taken the promised action
+
+    WHAT IS NOT RESOLUTION:
+    - Just drafting emails (unless clearly indicates sending)
+    - Planning or scheduling future actions
+    - General work that doesn't specifically fulfill a promise
+    - Browsing or research that doesn't complete the commitment
+
+    IMPORTANT GUIDELINES:
+    1. Only mark promises as resolved if you see CLEAR EVIDENCE of fulfillment in the screenshot
+    2. Be specific about what evidence you observed that indicates resolution
+    3. If you see the Promise Keeper application itself, IGNORE it to avoid recursive issues
+    4. Match the evidence in the screenshot to the specific content and recipient of existing promises
+    5. Don't make assumptions - only mark as resolved if genuinely evident from the image
+
+    For each resolved promise, provide:
+    - The original promise details
+    - Clear reasoning explaining why it's considered resolved
+    - Specific evidence from the screenshot that supports this conclusion
+
+    If no promises appear to be resolved in this screenshot, return NoPromisesResolvedResponse.
+
+    Analyze the image: {{ userImage }}
+
+    {{ ctx.output_format }}
+  "#
 }
 
 test TestName {

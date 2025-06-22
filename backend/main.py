@@ -69,6 +69,8 @@ class ImageBase64Request(BaseModel):
 
 class PromiseListResponse(BaseModel):
     promises: list
+    resolved_promises: Optional[list] = []
+    resolved_count: Optional[int] = 0
 
 # Authentication models
 class UserResponse(BaseModel):
@@ -348,10 +350,79 @@ async def extract_promises_from_file_authenticated(
                 # Continue even if individual promise save fails
                 print(f"Failed to save promise: {save_error}")
         
-        return PromiseListResponse(promises=[
-            {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
-            for p in new_promises_to_save
-        ])
+        # Check for resolved promises using the same image
+        resolved_promises_count = 0
+        if existing_promises_baml:
+            try:
+                from baml_client.types import ResolvedPromisesResponse, NoPromisesResolvedResponse
+                
+                logger.info(f"Auth endpoint - User {user_id} - Checking for resolved promises against {len(existing_promises_baml)} existing promises")
+                
+                resolved_check_result = b.CheckResolvedPromises(baml_image, existing_promises_baml)
+                
+                if isinstance(resolved_check_result, ResolvedPromisesResponse):
+                    logger.info(f"Auth endpoint - User {user_id} - Found {len(resolved_check_result.resolved_promises)} resolved promises")
+                    
+                    # Update each resolved promise in the database - trust the LLM completely
+                    for resolved_promise in resolved_check_result.resolved_promises:
+                        try:
+                            logger.info(f"Auth endpoint - User {user_id} - LLM says this promise is resolved: '{resolved_promise.original_promise.content}'")
+                            
+                            # Simply find the promise by content - trust the LLM's decision completely
+                            update_response = admin_client.table("promises").update({
+                                "resolved": True,
+                                "resolved_screenshot_id": screenshot_id,
+                                "resolved_screenshot_time": screenshot_timestamp,
+                                "resolved_reason": resolved_promise.resolution_reasoning,
+                                "updated_at": "now()",
+                                "metadata": json.dumps({
+                                    "resolution_evidence": resolved_promise.resolution_evidence
+                                }) if resolved_promise.resolution_evidence else None
+                            }).eq("owner_id", user_id).eq("content", resolved_promise.original_promise.content).eq("resolved", False).execute()
+                            
+                            if update_response.data:
+                                resolved_promises_count += len(update_response.data)
+                                logger.info(f"Auth endpoint - User {user_id} - ✅ Marked promise as resolved: {resolved_promise.original_promise.content}")
+                                logger.info(f"Auth endpoint - User {user_id} - Resolution reason: {resolved_promise.resolution_reasoning}")
+                            else:
+                                logger.warning(f"Auth endpoint - User {user_id} - No matching unresolved promise found for: {resolved_promise.original_promise.content}")
+                                
+                        except Exception as resolve_error:
+                            logger.error(f"Auth endpoint - User {user_id} - Error updating resolved promise: {resolve_error}")
+                            continue
+                
+                elif isinstance(resolved_check_result, NoPromisesResolvedResponse):
+                    logger.info(f"Auth endpoint - User {user_id} - No promises resolved. Reason: {resolved_check_result.reason}")
+                    
+            except Exception as resolve_check_error:
+                logger.error(f"Auth endpoint - User {user_id} - Error checking for resolved promises: {resolve_check_error}")
+        
+        logger.info(f"Auth endpoint - User {user_id} - Summary: {len(new_promises_to_save)} new promises saved, {resolved_promises_count} promises marked as resolved")
+        
+        # Prepare resolved promises info for response
+        resolved_promises_info = []
+        if existing_promises_baml and resolved_promises_count > 0:
+            try:
+                if isinstance(resolved_check_result, ResolvedPromisesResponse):
+                    for resolved_promise in resolved_check_result.resolved_promises:
+                        resolved_promises_info.append({
+                            "content": resolved_promise.original_promise.content,
+                            "to_whom": resolved_promise.original_promise.to_whom,
+                            "deadline": resolved_promise.original_promise.deadline,
+                            "resolution_reasoning": resolved_promise.resolution_reasoning,
+                            "resolution_evidence": resolved_promise.resolution_evidence
+                        })
+            except Exception as resolved_info_error:
+                logger.error(f"Error preparing resolved promises info: {resolved_info_error}")
+        
+        return PromiseListResponse(
+            promises=[
+                {"content": p.content, "to_whom": p.to_whom, "deadline": p.deadline} 
+                for p in new_promises_to_save
+            ],
+            resolved_promises=resolved_promises_info,
+            resolved_count=resolved_promises_count
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
