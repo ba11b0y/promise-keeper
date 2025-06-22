@@ -115,7 +115,8 @@ function ExtractPromises(userImage: image) -> PromiseListResponse| NoPromisesFou
     IMPORTANT: If you see the Promise Keeper application itself (showing existing promises, app interface, settings, etc.), IGNORE everything in it.
     Do not extract any promises from the Promise Keeper app interface to avoid recursive issues.
     Do not consider duplicate texts as two different promises, even if they are repeated in the screenshot.
-    Also, make sure that you check the last of the messages in the screenshot to get the latest promises made by the user.
+    Also, make sure that you check the last of the messages in the screenshot to get the latest promises made by the user, but don't expect it to be a promise all the time.
+    It could be a message that the user is reading or replying to, but not necessarily a promise. Always check the intent.
 
     If you see normal browsing, working, or any content without clear interpersonal commitments, return NoPromisesFoundResponse.
 
