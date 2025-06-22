@@ -10,7 +10,7 @@ class Promise {
   deadline string? @description(#"
     When the promise should be fulfilled (could be specific date or relative time)
   "#)
-  action Action @description(#"
+  action Action? @description(#"
     You have the opportunity to pass this agent with an Apple MCP server to take actions on the user's behalf.
     If you think this is the case, you can pass the agent with the action you want to take, and the parameters you would need to pass to the agent to take that action.
   "#)
