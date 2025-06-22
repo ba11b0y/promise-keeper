@@ -7,6 +7,7 @@ class PromiseKeeperApp {
         // Initialize modular managers
         this.auth = new window.PromiseKeeperAuth.AuthManager(this);
         this.promises = new window.PromiseKeeperPromises.PromiseManager(this);
+        this.promiseListing = new window.PromiseKeeperListing.PromiseListingPage(this);
         this.screenshots = new window.PromiseKeeperScreenshots.ScreenshotManager(this);
         this.ui = new window.PromiseKeeperUI.UIManager(this);
         this.debug = new window.PromiseKeeperDebug.DebugManager(this);
@@ -21,52 +22,76 @@ class PromiseKeeperApp {
     }
 
     setupEventListeners() {
-        // Auth form handlers
-        document.getElementById('loginBtn').addEventListener('click', () => this.auth.handleLogin());
-        document.getElementById('registerBtn').addEventListener('click', () => this.auth.handleRegister());
-        document.getElementById('logoutBtn').addEventListener('click', () => this.auth.handleLogout());
+        // Auth form handlers (only for old auth elements that still exist)
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const showRegisterBtn = document.getElementById('showRegisterBtn');
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        
+        if (loginBtn) loginBtn.addEventListener('click', () => this.auth.handleLogin());
+        if (registerBtn) registerBtn.addEventListener('click', () => this.auth.handleRegister());
+        if (logoutBtn) logoutBtn.addEventListener('click', () => this.auth.handleLogout());
+        if (showRegisterBtn) showRegisterBtn.addEventListener('click', () => this.ui.showRegisterPage());
+        if (showLoginBtn) showLoginBtn.addEventListener('click', () => this.ui.showLoginPage());
 
-        // Navigation between login and register
-        document.getElementById('showRegisterBtn').addEventListener('click', () => this.ui.showRegisterPage());
-        document.getElementById('showLoginBtn').addEventListener('click', () => this.ui.showLoginPage());
-
-        // Promise form handlers
-        document.getElementById('addPromiseBtn').addEventListener('click', () => this.promises.addPromise());
-        document.getElementById('promiseInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.promises.addPromise();
-                // Also trigger screenshot if in enter mode
-                this.screenshots.onEnterKeyPressed();
-            }
-        });
+        // Legacy promise form handlers (if old elements exist)
+        const oldAddPromiseBtn = document.getElementById('addPromiseBtn');
+        const oldPromiseInput = document.getElementById('promiseInput');
+        
+        if (oldAddPromiseBtn) oldAddPromiseBtn.addEventListener('click', () => this.promises.addPromise());
+        if (oldPromiseInput) {
+            oldPromiseInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.promises.addPromise();
+                    // Also trigger screenshot if in enter mode
+                    this.screenshots.onEnterKeyPressed();
+                }
+            });
+        }
 
         // Auth form enter key handling
-        document.getElementById('loginPassword').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                this.auth.handleLogin();
-                // Also trigger screenshot if in enter mode
-                this.screenshots.onEnterKeyPressed();
-            }
-        });
+        const loginPassword = document.getElementById('loginPassword');
+        const confirmPassword = document.getElementById('confirmPassword');
+        
+        if (loginPassword) {
+            loginPassword.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.auth.handleLogin();
+                    // Also trigger screenshot if in enter mode
+                    this.screenshots.onEnterKeyPressed();
+                }
+            });
+        }
 
-        document.getElementById('confirmPassword').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                this.auth.handleRegister();
-                // Also trigger screenshot if in enter mode
-                this.screenshots.onEnterKeyPressed();
-            }
-        });
+        if (confirmPassword) {
+            confirmPassword.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.auth.handleRegister();
+                    // Also trigger screenshot if in enter mode
+                    this.screenshots.onEnterKeyPressed();
+                }
+            });
+        }
 
-        // Screenshot control handlers
-        document.getElementById('screenshotModeSelect').addEventListener('change', (e) => this.screenshots.setScreenshotMode(e.target.value));
-        document.getElementById('takeScreenshotBtn').addEventListener('click', () => this.screenshots.takeScreenshotNow());
+        // Legacy screenshot control handlers (if old elements exist)
+        const oldScreenshotModeSelect = document.getElementById('screenshotModeSelect');
+        const oldTakeScreenshotBtn = document.getElementById('takeScreenshotBtn');
+        
+        if (oldScreenshotModeSelect) oldScreenshotModeSelect.addEventListener('change', async (e) => await this.screenshots.setScreenshotMode(e.target.value));
+        if (oldTakeScreenshotBtn) oldTakeScreenshotBtn.addEventListener('click', () => this.screenshots.takeScreenshotNow());
 
         // Debug panel handlers
-        document.getElementById('debugToggle').addEventListener('click', () => this.debug.toggleDebugPanel());
-        document.getElementById('debugClose').addEventListener('click', () => this.debug.closeDebugPanel());
-        document.getElementById('uploadScreenshotBtn').addEventListener('click', () => this.screenshots.uploadScreenshot());
-        document.getElementById('testBackendAuthBtn').addEventListener('click', () => this.debug.testBackendAuth());
+        const debugToggle = document.getElementById('debugToggle');
+        const debugClose = document.getElementById('debugClose');
+        const uploadScreenshotBtn = document.getElementById('uploadScreenshotBtn');
+        const testBackendAuthBtn = document.getElementById('testBackendAuthBtn');
+        
+        if (debugToggle) debugToggle.addEventListener('click', () => this.debug.toggleDebugPanel());
+        if (debugClose) debugClose.addEventListener('click', () => this.debug.closeDebugPanel());
+        if (uploadScreenshotBtn) uploadScreenshotBtn.addEventListener('click', () => this.screenshots.uploadScreenshot());
+        if (testBackendAuthBtn) testBackendAuthBtn.addEventListener('click', () => this.debug.testBackendAuth());
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -78,6 +103,10 @@ class PromiseKeeperApp {
             // Escape to close debug panel
             if (e.key === 'Escape') {
                 this.debug.closeDebugPanel();
+                // Also close settings modal if open
+                if (this.promiseListing && this.promiseListing.isSettingsOpen) {
+                    this.promiseListing.closeSettings();
+                }
             }
             // Global Enter key tracking for screenshot mode (only if not handled by specific elements)
             if (e.key === 'Enter' && !e.target.matches('input, textarea, button')) {
@@ -90,9 +119,18 @@ class PromiseKeeperApp {
         // Listen for focus input event from tray
         if (window.electronAPI) {
             window.electronAPI.onFocusInput(() => {
-                const input = document.getElementById('promiseInput');
-                if (input) {
-                    input.focus();
+                // Try the new promise listing input first, then fall back to old input
+                const newInput = document.getElementById('promiseInput');
+                const oldInput = document.getElementById('promiseInput');
+                
+                if (newInput) {
+                    newInput.focus();
+                    // Also show the add promise form if it's hidden
+                    if (this.promiseListing) {
+                        this.promiseListing.showAddPromiseForm();
+                    }
+                } else if (oldInput) {
+                    oldInput.focus();
                 }
             });
 

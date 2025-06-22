@@ -3,37 +3,164 @@ console.log('Promise Keeper ui.js loading...');
 class UIManager {
     constructor(app) {
         this.app = app;
+        this.isSignUp = false;
+        this.liquidBg = null;
+        this.initializeModernAuth();
+    }
+
+    initializeModernAuth() {
+        // Initialize liquid background
+        setTimeout(() => {
+            this.liquidBg = new window.LiquidBackground('liquidBgContainer');
+        }, 100);
+
+        // Set up event listeners for modern auth
+        this.setupAuthEventListeners();
+    }
+
+    setupAuthEventListeners() {
+        // Password toggle
+        const passwordToggle = document.getElementById('passwordToggle');
+        const passwordInput = document.getElementById('authPassword');
+        const eyeIcon = document.querySelector('.eye-icon');
+        const eyeOffIcon = document.querySelector('.eye-off-icon');
+
+        if (passwordToggle && passwordInput) {
+            passwordToggle.addEventListener('click', () => {
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+                eyeIcon.style.display = isPassword ? 'none' : 'block';
+                eyeOffIcon.style.display = isPassword ? 'block' : 'none';
+            });
+        }
+
+        // Form toggle
+        const authToggle = document.getElementById('authToggle');
+        if (authToggle) {
+            authToggle.addEventListener('click', () => {
+                this.toggleAuthMode();
+            });
+        }
+
+        // Form submission
+        const authForm = document.getElementById('authForm');
+        if (authForm) {
+            authForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleModernAuth();
+            });
+        }
+    }
+
+    toggleAuthMode() {
+        this.isSignUp = !this.isSignUp;
+        this.updateAuthForm();
+        
+        // Clear form and messages
+        this.clearAuthForm();
+        clearLoginMessages();
+        clearRegisterMessages();
+    }
+
+    updateAuthForm() {
+        const nameGroup = document.getElementById('nameGroup');
+        const authSubtitle = document.getElementById('authSubtitle');
+        const buttonText = document.getElementById('buttonText');
+        const toggleText = document.getElementById('toggleText');
+        const toggleAction = document.getElementById('toggleAction');
+
+        if (this.isSignUp) {
+            nameGroup.style.display = 'block';
+            authSubtitle.textContent = 'Create your account to start keeping promises';
+            buttonText.textContent = 'Create Account';
+            toggleText.textContent = 'Already have an account? ';
+            toggleAction.textContent = 'Sign in';
+        } else {
+            nameGroup.style.display = 'none';
+            authSubtitle.textContent = 'Welcome back. Sign in to continue.';
+            buttonText.textContent = 'Sign In';
+            toggleText.textContent = "Don't have an account? ";
+            toggleAction.textContent = 'Sign up';
+        }
+    }
+
+    clearAuthForm() {
+        document.getElementById('authEmail').value = '';
+        document.getElementById('authPassword').value = '';
+        document.getElementById('fullName').value = '';
+    }
+
+    async handleModernAuth() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const fullName = document.getElementById('fullName').value;
+        const authButton = document.getElementById('authButton');
+        const buttonText = document.getElementById('buttonText');
+        const buttonIcon = document.querySelector('.button-icon');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        // Show loading state
+        authButton.disabled = true;
+        buttonText.style.opacity = '0';
+        buttonIcon.style.opacity = '0';
+        loadingSpinner.style.display = 'block';
+
+        try {
+            if (this.isSignUp) {
+                await this.app.auth.handleModernRegister(email, password, fullName);
+            } else {
+                await this.app.auth.handleModernLogin(email, password);
+            }
+        } catch (error) {
+            console.error('Auth error:', error);
+        } finally {
+            // Reset button state
+            authButton.disabled = false;
+            buttonText.style.opacity = '1';
+            buttonIcon.style.opacity = '1';
+            loadingSpinner.style.display = 'none';
+        }
     }
 
     showLoginPage() {
-        document.getElementById('loginSection').style.display = 'block';
-        document.getElementById('registerSection').style.display = 'none';
-        document.getElementById('promiseSection').style.display = 'none';
+        document.body.classList.add('modern-auth-active');
+        document.getElementById('authSection').style.display = 'flex';
         document.getElementById('userInfo').style.display = 'none';
         
-        // Clear form
-        document.getElementById('loginEmail').value = '';
-        document.getElementById('loginPassword').value = '';
+        // Hide the promise listing component
+        if (this.app.promiseListing) {
+            this.app.promiseListing.hide();
+        }
+        
+        // Ensure we're in login mode
+        this.isSignUp = false;
+        this.updateAuthForm();
+        this.clearAuthForm();
         clearLoginMessages();
+        clearRegisterMessages();
     }
 
     showRegisterPage() {
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('registerSection').style.display = 'block';
-        document.getElementById('promiseSection').style.display = 'none';
+        document.body.classList.add('modern-auth-active');
+        document.getElementById('authSection').style.display = 'flex';
         document.getElementById('userInfo').style.display = 'none';
         
-        // Clear form
-        document.getElementById('registerEmail').value = '';
-        document.getElementById('registerPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
+        // Hide the promise listing component
+        if (this.app.promiseListing) {
+            this.app.promiseListing.hide();
+        }
+        
+        // Ensure we're in register mode
+        this.isSignUp = true;
+        this.toggleAuthMode();
+        this.clearAuthForm();
+        clearLoginMessages();
         clearRegisterMessages();
     }
 
     showPromiseSection() {
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('registerSection').style.display = 'none';
-        document.getElementById('promiseSection').style.display = 'flex';
+        document.body.classList.remove('modern-auth-active');
+        document.getElementById('authSection').style.display = 'none';
         document.getElementById('userInfo').style.display = 'block';
         
         if (this.app.currentUser) {
@@ -45,6 +172,17 @@ class UIManager {
         
         clearLoginMessages();
         clearRegisterMessages();
+
+        // Clean up liquid background
+        if (this.liquidBg) {
+            this.liquidBg.destroy();
+            this.liquidBg = null;
+        }
+        
+        // Show the new Promise Listing component
+        if (this.app.promiseListing) {
+            this.app.promiseListing.show(this.app.currentUser);
+        }
     }
 
     loadScreenshotPreferences() {
@@ -63,35 +201,57 @@ class UIManager {
         }
         
         // Notify main process of the current mode
-        this.app.screenshots.setScreenshotMode(this.app.screenshots.screenshotMode);
+        this.app.screenshots.setScreenshotMode(this.app.screenshots.screenshotMode).catch(error => {
+            console.warn('Failed to set initial screenshot mode:', error);
+        });
     }
 }
 
 // Message display functions
 function showLoginMessage(message, type = 'info') {
     const messageDiv = document.getElementById('loginMessage');
-    messageDiv.className = type;
+    messageDiv.className = `auth-message ${type}`;
     messageDiv.textContent = message;
     messageDiv.style.display = 'block';
+    
+    // Auto-hide after delay for success/info messages
+    if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+            if (messageDiv.textContent === message) {
+                clearLoginMessages();
+            }
+        }, 3000);
+    }
 }
 
 function showRegisterMessage(message, type = 'info') {
     const messageDiv = document.getElementById('registerMessage');
-    messageDiv.className = type;
+    messageDiv.className = `auth-message ${type}`;
     messageDiv.textContent = message;
     messageDiv.style.display = 'block';
+    
+    // Auto-hide after delay for success/info messages
+    if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+            if (messageDiv.textContent === message) {
+                clearRegisterMessages();
+            }
+        }, 3000);
+    }
 }
 
 function clearLoginMessages() {
     const messageDiv = document.getElementById('loginMessage');
     messageDiv.style.display = 'none';
     messageDiv.textContent = '';
+    messageDiv.className = 'auth-message';
 }
 
 function clearRegisterMessages() {
     const messageDiv = document.getElementById('registerMessage');
     messageDiv.style.display = 'none';
     messageDiv.textContent = '';
+    messageDiv.className = 'auth-message';
 }
 
 function showUploadMessage(message, type = 'info') {

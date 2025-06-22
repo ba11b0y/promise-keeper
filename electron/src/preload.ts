@@ -107,6 +107,7 @@ export interface ElectronAPI {
     savePromiseScreenshot: (screenshotId: string, promises: any[]) => Promise<string>;
     getScreenshotPath: (screenshotId: string) => Promise<string>;
     takeScreenshotNow: () => Promise<void>;
+    setScreenshotMode: (mode: 'off' | 'interval' | 'enter') => Promise<void>;
   };
   mcp: {
     contacts: {

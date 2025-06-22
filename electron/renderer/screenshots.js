@@ -99,7 +99,11 @@ class ScreenshotManager {
                     window.PromiseKeeperUI.showUploadMessage(message, 'success');
 
                     // Reload the promises list to show updates
-                    await this.app.promises.loadPromises();
+                    if (this.app.promiseListing) {
+                        await this.app.promiseListing.loadPromises();
+                    } else {
+                        await this.app.promises.loadPromises();
+                    }
                 } else {
                     window.PromiseKeeperUI.showUploadMessage('No new promises found or resolved in the image.', 'info');
                 }
@@ -187,7 +191,11 @@ class ScreenshotManager {
                 
                 if (hasNewPromises || hasResolvedPromises) {
                     // Reload the promises list to show updates (both new and resolved)
-                    await this.app.promises.loadPromises();
+                    if (this.app.promiseListing) {
+                        await this.app.promiseListing.loadPromises();
+                    } else {
+                        await this.app.promises.loadPromises();
+                    }
 
                     // Create comprehensive notification message
                     let notificationMessage = '';
@@ -207,6 +215,11 @@ class ScreenshotManager {
                     // Show enhanced indicator for new promises
                     if (hasNewPromises) {
                         window.PromiseKeeperUI.showAutoPromiseCreatedIndicator(result.promises, data.screenshotId);
+                        
+                        // Also notify the promise listing component
+                        if (this.app.promiseListing) {
+                            this.app.promiseListing.onPromisesAutoCreated(result.promises, data.screenshotId);
+                        }
                     }
                 }
             } else if (!apiResponse.ok) {
@@ -420,16 +433,30 @@ class ScreenshotManager {
         }
     }
 
-    setScreenshotMode(mode) {
+    async setScreenshotMode(mode) {
         this.screenshotMode = mode;
         console.log('Screenshot mode:', mode);
         
         // Store the preference in localStorage
         localStorage.setItem('screenshotMode', mode);
         
-        // Notify the main process about the change
+        // Notify the main process about the change with error handling
         if (window.electronAPI?.screenshots?.setScreenshotMode) {
-            window.electronAPI.screenshots.setScreenshotMode(mode);
+            try {
+                await window.electronAPI.screenshots.setScreenshotMode(mode);
+                console.log('Screenshot mode successfully set in main process:', mode);
+            } catch (error) {
+                console.warn('Failed to set screenshot mode in main process (IPC handler may not be ready yet):', error);
+                // Retry after a short delay if the handler isn't ready
+                setTimeout(async () => {
+                    try {
+                        await window.electronAPI.screenshots.setScreenshotMode(mode);
+                        console.log('Screenshot mode successfully set in main process after retry:', mode);
+                    } catch (retryError) {
+                        console.error('Failed to set screenshot mode after retry:', retryError);
+                    }
+                }, 1000);
+            }
         }
     }
 

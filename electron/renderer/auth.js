@@ -38,7 +38,12 @@ class AuthManager {
                 window.PromiseKeeperUI.showLoginMessage('Welcome back!', 'success');
                 setTimeout(() => {
                     this.app.ui.showPromiseSection();
-                    this.app.promises.loadPromises();
+                    // Use the new promise listing component instead of old promises
+                    if (this.app.promiseListing) {
+                        this.app.promiseListing.loadPromises();
+                    } else {
+                        this.app.promises.loadPromises();
+                    }
                 }, 1000);
             } else {
                 window.PromiseKeeperUI.showLoginMessage('Login failed - no user returned', 'error');
@@ -113,7 +118,12 @@ class AuthManager {
                         console.log('Auto-login successful:', loginData.user);
                         this.app.currentUser = loginData.user;
                         this.app.ui.showPromiseSection();
-                        this.app.promises.loadPromises();
+                        // Use the new promise listing component instead of old promises
+                        if (this.app.promiseListing) {
+                            this.app.promiseListing.loadPromises();
+                        } else {
+                            this.app.promises.loadPromises();
+                        }
                     }
                 }, 1000);
             }
@@ -142,11 +152,135 @@ class AuthManager {
         if (user) {
             this.app.currentUser = user;
             this.app.ui.showPromiseSection();
-            await this.app.promises.loadPromises();
+            // Use the new promise listing component instead of old promises
+            if (this.app.promiseListing) {
+                await this.app.promiseListing.loadPromises();
+            } else {
+                await this.app.promises.loadPromises();
+            }
             return true;
         } else {
             this.app.ui.showLoginPage();
             return false;
+        }
+    }
+
+    async handleModernLogin(email, password) {
+        if (!email || !password) {
+            showLoginMessage('Please enter both email and password', 'error');
+            return;
+        }
+
+        showLoginMessage('Signing in...', 'loading');
+
+        try {
+            console.log('Attempting login with:', { email });
+            
+            const { data, error } = await window.PromiseKeeperConfig.supabaseClient.auth.signInWithPassword({
+                email,
+                password,
+                options: {
+                    skipBrowserRedirect: true
+                }
+            });
+
+            console.log('Login response:', { data, error });
+
+            if (error) {
+                console.error('Login error:', error);
+                showLoginMessage(error.message, 'error');
+            } else if (data.user) {
+                console.log('Login successful:', data.user);
+                this.app.currentUser = data.user;
+                showLoginMessage('Welcome back!', 'success');
+                setTimeout(() => {
+                    this.app.ui.showPromiseSection();
+                    // Use the new promise listing component instead of old promises
+                    if (this.app.promiseListing) {
+                        this.app.promiseListing.loadPromises();
+                    } else {
+                        this.app.promises.loadPromises();
+                    }
+                }, 1000);
+            } else {
+                showLoginMessage('Login failed - no user returned', 'error');
+            }
+        } catch (err) {
+            console.error('Login exception:', err);
+            showLoginMessage('Login failed: ' + err.message, 'error');
+        }
+    }
+
+    async handleModernRegister(email, password, fullName) {
+        if (!email || !password || !fullName) {
+            showRegisterMessage('Please fill in all fields', 'error');
+            return;
+        }
+
+        if (password.length < 6) {
+            showRegisterMessage('Password must be at least 6 characters', 'error');
+            return;
+        }
+
+        showRegisterMessage('Creating account...', 'loading');
+
+        try {
+            console.log('Attempting registration with:', { email, fullName });
+            
+            // Sign up the user
+            const { data: signupData, error: signupError } = await window.PromiseKeeperConfig.supabaseClient.auth.signUp({
+                email,
+                password,
+                options: {
+                    skipBrowserRedirect: true,
+                    data: {
+                        full_name: fullName
+                    }
+                }
+            });
+
+            console.log('Signup response:', { signupData, signupError });
+
+            if (signupError) {
+                console.error('Signup error:', signupError);
+                showRegisterMessage(signupError.message, 'error');
+                return;
+            }
+
+            // If signup was successful, immediately sign in
+            if (signupData.user) {
+                showRegisterMessage('Account created! Signing you in...', 'success');
+                
+                // Wait a moment then sign in
+                setTimeout(async () => {
+                    const { data: loginData, error: loginError } = await window.PromiseKeeperConfig.supabaseClient.auth.signInWithPassword({
+                        email,
+                        password,
+                        options: {
+                            skipBrowserRedirect: true
+                        }
+                    });
+
+                    if (loginError) {
+                        console.error('Auto-login error:', loginError);
+                        showRegisterMessage('Account created but auto-login failed. Please sign in manually.', 'error');
+                        setTimeout(() => this.app.ui.showLoginPage(), 2000);
+                    } else if (loginData.user) {
+                        console.log('Auto-login successful:', loginData.user);
+                        this.app.currentUser = loginData.user;
+                        this.app.ui.showPromiseSection();
+                        // Use the new promise listing component instead of old promises
+                        if (this.app.promiseListing) {
+                            this.app.promiseListing.loadPromises();
+                        } else {
+                            this.app.promises.loadPromises();
+                        }
+                    }
+                }, 1000);
+            }
+        } catch (err) {
+            console.error('Registration exception:', err);
+            showRegisterMessage('Registration failed: ' + err.message, 'error');
         }
     }
 }
