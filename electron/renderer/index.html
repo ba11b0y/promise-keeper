@@ -407,61 +407,51 @@
             gap: 12px;
         }
 
-        .screenshot-toggle-container {
+        .screenshot-mode-container {
             flex: 1;
             min-width: 250px;
         }
 
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
+        .screenshot-mode-label {
+            display: block;
             font-size: 14px;
             color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
 
-        .toggle-label input[type="checkbox"] {
-            display: none;
-        }
-
-        .toggle-slider {
-            position: relative;
-            width: 48px;
-            height: 24px;
-            background: #ccc;
-            border-radius: 24px;
-            margin-right: 12px;
-            transition: background 0.3s;
-        }
-
-        .toggle-slider::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
+        .screenshot-mode-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
             background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            color: #333;
+            cursor: pointer;
+            transition: border-color 0.2s;
         }
 
-        .toggle-label input[type="checkbox"]:checked + .toggle-slider {
-            background: #667eea;
+        .screenshot-mode-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .toggle-label input[type="checkbox"]:checked + .toggle-slider::before {
-            transform: translateX(24px);
+        .screenshot-mode-select option {
+            padding: 8px;
         }
 
-        .toggle-text {
-            user-select: none;
-        }
-
-        #takeScreenshotBtn {
+        .screenshot-controls .btn {
             flex-shrink: 0;
             min-width: 180px;
+        }
+
+        /* Remove old toggle styles */
+        .screenshot-toggle-container,
+        .toggle-label,
+        .toggle-slider {
+            display: none;
         }
     </style>
 </head>
@@ -537,12 +527,13 @@
 
             <!-- Screenshot Controls -->
             <div class="screenshot-controls">
-                <div class="screenshot-toggle-container">
-                    <label class="toggle-label">
-                        <input type="checkbox" id="autoScreenshotToggle">
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-text">Auto-capture screenshots for promise detection</span>
-                    </label>
+                <div class="screenshot-mode-container">
+                    <label class="screenshot-mode-label">Screenshot Mode:</label>
+                                         <select class="screenshot-mode-select" id="screenshotModeSelect">
+                         <option value="off">Off (Manual only)</option>
+                         <option value="interval">Every 30 seconds</option>
+                         <option value="enter">On Enter key press</option>
+                     </select>
                 </div>
                 <button class="btn btn-secondary" id="takeScreenshotBtn">📸 Take Screenshot Now</button>
             </div>
@@ -573,9 +564,11 @@
         <div class="debug-section">
             <h4>Info</h4>
             <p style="font-size: 12px; color: #ccc; line-height: 1.4;">
-                Use the toggle above to enable automatic screenshot processing for promise extraction, or take manual screenshots as needed.
+                Choose screenshot mode: Every 30 seconds for continuous monitoring, On Enter for contextual captures (max once per minute), or Off for manual only.
                 <br><br>
-                Press <kbd>Ctrl+D</kbd> or <kbd>Cmd+D</kbd> to toggle this panel.
+                Global shortcuts:<br>
+                • <kbd>Enter</kbd>: Passively monitored system-wide (when in Enter mode, max once per minute)<br>
+                • <kbd>Ctrl+D</kbd> / <kbd>Cmd+D</kbd>: Toggle this panel
             </p>
         </div>
     </div>

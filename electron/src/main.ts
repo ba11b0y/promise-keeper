@@ -8,6 +8,9 @@ import * as dotenv from 'dotenv';
 import { mcpClient } from './services/mcp-client';
 import { NotificationManager } from './services/notification-manager';
 
+// Import uiohook-napi for global key listening
+const { uIOhook, UiohookKey } = require('uiohook-napi');
+
 // Load environment variables from .env.local file
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
@@ -20,6 +23,10 @@ class PromiseKeeperApp {
   private screenshotDir = path.join(os.homedir(), 'Documents', 'Screenshots');
   private promiseScreenshotsDir = path.join(os.homedir(), 'Documents', 'PromiseKeeper', 'PromiseScreenshots');
   private screenshotInterval: NodeJS.Timeout | null = null;
+  private screenshotMode: 'off' | 'interval' | 'enter' = 'off';
+  private lastGlobalEnterTime: number = 0;
+  private globalEnterCooldown: number = 60000; // 1 minute cooldown for global enter
+  private globalKeyListener: boolean = false;
   private apiBaseUrl = process.env.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-red-sunset-2072.fly.dev";
   private notificationManager: NotificationManager;
 
@@ -61,6 +68,8 @@ class PromiseKeeperApp {
       if (this.screenshotInterval) clearInterval(this.screenshotInterval);
       // Unregister all shortcuts
       globalShortcut.unregisterAll();
+      // Stop global key listener
+      this.stopGlobalKeyListener();
       await mcpClient.cleanup();
     });
   }
@@ -72,7 +81,7 @@ class PromiseKeeperApp {
     // Use Command+Shift+T on macOS, Control+Shift+T on Windows/Linux
     const shortcutKey = process.platform === 'darwin' ? 'Command+Shift+T' : 'Control+Shift+T';
 
-    // Register the shortcut
+    // Register the notification shortcut
     const success = globalShortcut.register(shortcutKey, () => {
       console.log('Notification shortcut pressed');
       this.notificationManager.handleTabPress();
@@ -83,6 +92,9 @@ class PromiseKeeperApp {
     } else {
       console.log(`${shortcutKey} shortcut registered successfully`);
     }
+
+         // Setup global key listener for Enter key monitoring
+     this.setupGlobalKeyListener();
   }
 
   private createWindow() {
@@ -301,12 +313,88 @@ class PromiseKeeperApp {
     ipcMain.handle('take-screenshot-now', () => {
       this.takeScreenshotAndProcess();
     });
+
+    // Handle screenshot mode changes
+    ipcMain.handle('set-screenshot-mode', (_, mode: 'off' | 'interval' | 'enter') => {
+      this.setScreenshotMode(mode);
+    });
   }
 
   private startScreenshots() {
     if (!fs.existsSync(this.screenshotDir)) fs.mkdirSync(this.screenshotDir, { recursive: true });
     if (!fs.existsSync(this.promiseScreenshotsDir)) fs.mkdirSync(this.promiseScreenshotsDir, { recursive: true });
-    this.screenshotInterval = setInterval(() => this.takeScreenshotAndProcess(), 30000);
+    // Don't start interval by default - wait for mode to be set
+  }
+
+  private setScreenshotMode(mode: 'off' | 'interval' | 'enter') {
+    this.screenshotMode = mode;
+    console.log('Screenshot mode set to:', mode);
+    
+    // Clear existing interval
+    if (this.screenshotInterval) {
+      clearInterval(this.screenshotInterval);
+      this.screenshotInterval = null;
+    }
+    
+    // Start interval if mode is 'interval'
+    if (mode === 'interval') {
+      this.screenshotInterval = setInterval(() => this.takeScreenshotAndProcess(), 30000);
+      console.log('Started 30-second screenshot interval');
+    }
+    
+    // Global key listener is always running, mode just determines if we act on Enter presses
+  }
+
+  private setupGlobalKeyListener() {
+    if (this.globalKeyListener) return;
+    
+    try {
+             // Register keydown event listener
+       uIOhook.on('keydown', (e: any) => {
+         // Check if it's the Enter key (Return key)
+         if (e.keycode === UiohookKey.Enter) {
+           this.handleGlobalEnterPress();
+         }
+       });
+
+      // Start the global key listener
+      uIOhook.start();
+      this.globalKeyListener = true;
+      console.log('Global key listener started successfully');
+    } catch (error) {
+      console.error('Failed to start global key listener:', error);
+    }
+  }
+
+  private stopGlobalKeyListener() {
+    if (!this.globalKeyListener) return;
+    
+    try {
+      uIOhook.stop();
+      this.globalKeyListener = false;
+      console.log('Global key listener stopped');
+    } catch (error) {
+      console.error('Failed to stop global key listener:', error);
+    }
+  }
+
+  private handleGlobalEnterPress() {
+    // Only process if we're in 'enter' mode
+    if (this.screenshotMode !== 'enter') {
+      return;
+    }
+
+    const now = Date.now();
+    
+    // Rate limiting to prevent spam
+    if (now - this.lastGlobalEnterTime < this.globalEnterCooldown) {
+      console.log('Global Enter screenshot skipped: cooldown active');
+      return;
+    }
+    
+    this.lastGlobalEnterTime = now;
+    console.log('Global Enter key detected - taking screenshot');
+    this.takeScreenshotAndProcess();
   }
 
   private async takeScreenshotAndProcess() {

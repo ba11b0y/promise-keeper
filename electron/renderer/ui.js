@@ -48,16 +48,19 @@ class UIManager {
     }
 
     loadScreenshotPreferences() {
-        const saved = localStorage.getItem('autoScreenshotEnabled');
+        const saved = localStorage.getItem('screenshotMode');
         if (saved !== null) {
-            this.app.screenshots.autoScreenshotEnabled = saved === 'true';
+            this.app.screenshots.screenshotMode = saved;
         }
         
         // Update the UI to reflect the current state
-        const toggle = document.getElementById('autoScreenshotToggle');
-        if (toggle) {
-            toggle.checked = this.app.screenshots.autoScreenshotEnabled;
+        const select = document.getElementById('screenshotModeSelect');
+        if (select) {
+            select.value = this.app.screenshots.screenshotMode;
         }
+        
+        // Notify main process of the current mode
+        this.app.screenshots.setScreenshotMode(this.app.screenshots.screenshotMode);
     }
 }
 

@@ -36,6 +36,8 @@ class PromiseKeeperApp {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.promises.addPromise();
+                // Also trigger screenshot if in enter mode
+                this.screenshots.onEnterKeyPressed();
             }
         });
 
@@ -43,17 +45,21 @@ class PromiseKeeperApp {
         document.getElementById('loginPassword').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 this.auth.handleLogin();
+                // Also trigger screenshot if in enter mode
+                this.screenshots.onEnterKeyPressed();
             }
         });
 
         document.getElementById('confirmPassword').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 this.auth.handleRegister();
+                // Also trigger screenshot if in enter mode
+                this.screenshots.onEnterKeyPressed();
             }
         });
 
         // Screenshot control handlers
-        document.getElementById('autoScreenshotToggle').addEventListener('change', (e) => this.screenshots.toggleAutoScreenshot(e.target.checked));
+        document.getElementById('screenshotModeSelect').addEventListener('change', (e) => this.screenshots.setScreenshotMode(e.target.value));
         document.getElementById('takeScreenshotBtn').addEventListener('click', () => this.screenshots.takeScreenshotNow());
 
         // Debug panel handlers
@@ -73,7 +79,11 @@ class PromiseKeeperApp {
             if (e.key === 'Escape') {
                 this.debug.closeDebugPanel();
             }
-        });
+            // Global Enter key tracking for screenshot mode (only if not handled by specific elements)
+            if (e.key === 'Enter' && !e.target.matches('input, textarea, button')) {
+                this.screenshots.onEnterKeyPressed();
+            }
+        }, true); // Use capture phase to catch events before they're handled by specific elements
     }
 
     setupElectronEvents() {

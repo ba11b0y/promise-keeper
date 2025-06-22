@@ -38,7 +38,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('save-promise-screenshot', { screenshotId, promises }),
     getScreenshotPath: (screenshotId: string) =>
       ipcRenderer.invoke('get-screenshot-path', screenshotId),
-    takeScreenshotNow: () => ipcRenderer.invoke('take-screenshot-now')
+    takeScreenshotNow: () => ipcRenderer.invoke('take-screenshot-now'),
+    setScreenshotMode: (mode: 'off' | 'interval' | 'enter') => 
+      ipcRenderer.invoke('set-screenshot-mode', mode)
   },
 
   // MCP operations

@@ -3,8 +3,10 @@ console.log('Promise Keeper screenshots.js loading...');
 class ScreenshotManager {
     constructor(app) {
         this.app = app;
-        this.autoScreenshotEnabled = false; // Default to off
+        this.screenshotMode = 'off'; // 'off', 'interval', 'enter'
         this.manualScreenshotRequested = false; // Flag for manual screenshots
+        this.lastEnterScreenshot = 0; // Track last enter screenshot time
+        this.enterScreenshotCooldown = 60000; // 1 minute cooldown for enter mode
     }
 
     async uploadScreenshot() {
@@ -99,9 +101,9 @@ class ScreenshotManager {
             return;
         }
 
-        // Allow processing if it's a manual screenshot or if auto-screenshot is enabled
-        if (!this.autoScreenshotEnabled && !this.manualScreenshotRequested) {
-            console.log('Screenshot promise processing skipped: auto-screenshot disabled');
+        // Allow processing if it's a manual screenshot or if screenshot mode allows it
+        if (this.screenshotMode === 'off' && !this.manualScreenshotRequested) {
+            console.log('Screenshot promise processing skipped: screenshot mode is off');
             return;
         }
 
@@ -319,17 +321,39 @@ class ScreenshotManager {
         }
     }
 
-    toggleAutoScreenshot(enabled) {
-        this.autoScreenshotEnabled = enabled;
-        console.log('Auto-screenshot:', enabled ? 'enabled' : 'disabled');
+    setScreenshotMode(mode) {
+        this.screenshotMode = mode;
+        console.log('Screenshot mode:', mode);
         
         // Store the preference in localStorage
-        localStorage.setItem('autoScreenshotEnabled', enabled.toString());
+        localStorage.setItem('screenshotMode', mode);
         
         // Notify the main process about the change
-        if (window.electronAPI?.screenshots?.setAutoScreenshotEnabled) {
-            window.electronAPI.screenshots.setAutoScreenshotEnabled(enabled);
+        if (window.electronAPI?.screenshots?.setScreenshotMode) {
+            window.electronAPI.screenshots.setScreenshotMode(mode);
         }
+    }
+
+    onEnterKeyPressed() {
+        console.log('onEnterKeyPressed called, current mode:', this.screenshotMode);
+        
+        if (this.screenshotMode !== 'enter') {
+            console.log('Screenshot mode is not "enter", skipping');
+            return; // Only process enter key in enter mode
+        }
+
+        const now = Date.now();
+        if (now - this.lastEnterScreenshot < this.enterScreenshotCooldown) {
+            const remainingTime = Math.ceil((this.enterScreenshotCooldown - (now - this.lastEnterScreenshot)) / 1000);
+            console.log(`Enter screenshot skipped: cooldown active (${remainingTime}s remaining)`);
+            window.PromiseKeeperUI.showUploadMessage(`📸 Screenshot cooldown: ${remainingTime}s remaining`, 'info');
+            return;
+        }
+
+        this.lastEnterScreenshot = now;
+        console.log('Enter key pressed, taking screenshot...');
+        window.PromiseKeeperUI.showUploadMessage('📸 Enter triggered screenshot...', 'info');
+        this.takeScreenshotNow();
     }
 
     async takeScreenshotNow() {
