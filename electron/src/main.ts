@@ -23,7 +23,7 @@ class PromiseKeeperApp {
   private screenshotDir = path.join(os.homedir(), 'Documents', 'Screenshots');
   private promiseScreenshotsDir = path.join(os.homedir(), 'Documents', 'PromiseKeeper', 'PromiseScreenshots');
   private screenshotInterval: NodeJS.Timeout | null = null;
-  private screenshotMode: 'off' | 'interval' | 'enter' = 'off';
+  private screenshotMode: 'off' | 'interval' | 'enter' = 'enter';
   private lastGlobalEnterTime: number = 0;
   private globalEnterCooldown: number = 60000; // 1 minute cooldown for global enter
   private globalKeyListener: boolean = false;

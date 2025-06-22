@@ -3,7 +3,7 @@ console.log('Promise Keeper screenshots.js loading...');
 class ScreenshotManager {
     constructor(app) {
         this.app = app;
-        this.screenshotMode = 'off'; // 'off', 'interval', 'enter'
+        this.screenshotMode = 'enter'; // 'off', 'interval', 'enter'
         this.manualScreenshotRequested = false; // Flag for manual screenshots
         this.lastEnterScreenshot = 0; // Track last enter screenshot time
         this.enterScreenshotCooldown = 60000; // 1 minute cooldown for enter mode

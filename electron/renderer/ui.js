@@ -51,6 +51,9 @@ class UIManager {
         const saved = localStorage.getItem('screenshotMode');
         if (saved !== null) {
             this.app.screenshots.screenshotMode = saved;
+        } else {
+            // Default to 'enter' mode for new users
+            this.app.screenshots.screenshotMode = 'enter';
         }
         
         // Update the UI to reflect the current state
