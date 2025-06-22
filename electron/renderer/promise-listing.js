@@ -623,7 +623,8 @@ class PromiseListingPage {
             if (window.electronAPI?.notifications) {
                 window.electronAPI.notifications.show(
                     'Promise Added',
-                    `New promise: ${content}`
+                    `New promise: ${content}`,
+                    { action: 'promise_added', to_whom: '', start_date: '' }
                 );
             }
         } catch (err) {

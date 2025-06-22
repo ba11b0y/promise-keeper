@@ -23,7 +23,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Notification operations
   notifications: {
-    show: (title: string, body: string) => ipcRenderer.invoke('show-notification', { title, body })
+    show: (title: string, body: string, metadata?: { action?: string; start_date?: string; to_whom?: string }) =>
+      ipcRenderer.invoke('show-notification', { title, body, metadata })
   },
 
   // File operations
@@ -97,7 +98,7 @@ export interface ElectronAPI {
     quit: () => Promise<void>;
   };
   notifications: {
-    show: (title: string, body: string) => Promise<void>;
+    show: (title: string, body: string, metadata?: { action?: string; start_date?: string; to_whom?: string }) => Promise<void>;
   };
   files: {
     showFilePicker: () => Promise<string | null>;

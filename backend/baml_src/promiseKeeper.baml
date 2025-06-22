@@ -10,39 +10,37 @@ class Promise {
   deadline string? @description(#"
     When the promise should be fulfilled (could be specific date or relative time)
   "#)
-  potentialActionsToTake PotentialAction[] @description(#"
+  action Action @description(#"
     You have the opportunity to pass this agent with an Apple MCP server to take actions on the user's behalf.
     If you think this is the case, you can pass the agent with the action you want to take, and the parameters you would need to pass to the agent to take that action.
   "#)
 }
 
-class PotentialAction {
-  action Messages_MCP_Call | System_Launch_App | Calendar_Add
-  action_dependencies string? @description(#"
-    What info from the earlier actions you would need to accomplish this action
+enum ActionType {
+  // Messages_compose_message @description(#"
+  //   messages_compose_message
+  // "#)
+  System_Launch_App @description(#"
+    system_launch_app
   "#)
-  action_details string? @description(#"
-    Why you think this is the action, in this order, to take.
+  Calendar_Add @description(#"
+    calendar_add
   "#)
 }
 
-class Messages_MCP_Call {
-  tool_name "messages_compose_message"
-  recipient string
-  body string
+class Action {
+  actionType ActionType
+  start_time string? @description(#"
+    When the action should start (if applicable), format it in datetime format (e.g., "2025-06-21T20:00:00Z")
+  "#)
+  end_time string? @description(#"
+    When the action should end (if applicable), format it in datetime format (e.g., "2025-06-21T21:00:00Z")
+  "#)
+  whom_to string? @description(#"
+    Who the action is directed to (if applicable), usually the top of the window contains the name of the person or entity
+  "#)
 }
 
-class System_Launch_App {
-  tool_name "system_launch_app"
-  name string
-}
-
-class Calendar_Add {
-  tool_name "calendar_add"
-  title string
-  startDate string
-  endDate string
-}
 
 class ResolvedPromise {
   original_promise Promise @description(#"
@@ -271,17 +269,28 @@ test TestName2 {
   functions [CheckExistingPromises]
   args {
     newPotentialPromises[ {
-      content "I'll send the report by Friday"
-      reasoning "I'll get you that report by Friday"
-      to_whom "John"
+      content "Hey! Wanna catch up on Zoom tomorrow at 8? "
+      reasoning ""
+      to_whom ""
       deadline "2025-06-21"
-    }
+      action {
+        actionType Calendar_Add
+        start_time "2025-06-21T20:00:00Z"
+        end_time "2025-06-21T21:00:00Z"
+        whom_to "John"
+      }
+    },
     ]
     existingPromisesInDB [{
       content "I'll send the report by Friday"
       reasoning "I'll get you that report by Friday"
       to_whom "John"
       deadline "2025-06-21"
+      action {
+        actionType Messages_compose_message
+        action_dependencies "recipient, body"
+        action_details "I'll send the report by Friday"
+      }
     }]
   }
 }

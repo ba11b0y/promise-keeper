@@ -114,7 +114,8 @@ class ActionHandlers {
             if (window.electronAPI?.notifications) {
                 window.electronAPI.notifications.show(
                     'Message Composed',
-                    `Message prepared for ${action.recipient}`
+                    `Message prepared for ${action.recipient}`,
+                    { action: 'messages_compose_message', to_whom: action.recipient }
                 );
             }
 
@@ -154,7 +155,8 @@ class ActionHandlers {
             if (window.electronAPI?.notifications) {
                 window.electronAPI.notifications.show(
                     'App Launched',
-                    `${action.name} has been launched`
+                    `${action.name} has been launched`,
+                    { action: 'system_launch_app', to_whom: '', start_date: '' }
                 );
             }
 
@@ -206,7 +208,8 @@ class ActionHandlers {
             if (window.electronAPI?.notifications) {
                 window.electronAPI.notifications.show(
                     'Calendar Event Added',
-                    `"${action.title}" added to calendar`
+                    `"${action.title}" added to calendar`,
+                    { action: 'calendar_add', start_date: action.startDate, to_whom: '' }
                 );
             }
 

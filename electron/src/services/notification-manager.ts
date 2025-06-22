@@ -6,6 +6,14 @@ interface NotificationData {
     title: string;
     body: string;
     timestamp: number;
+    action?: {
+        actionType: string;
+        start_time: string;
+        end_time: string;
+        to_whom: string;
+    };
+    start_date?: string;
+    to_whom?: string;
 }
 
 export class NotificationManager {
@@ -32,7 +40,7 @@ export class NotificationManager {
         this.mainWindow = window;
     }
 
-    public async showNotification(title: string, body: string, onClickCallback?: () => void): Promise<void> {
+    public async showNotification(title: string, body: string, metadata: Partial<Omit<NotificationData, 'title' | 'body' | 'timestamp'>> = {}, onClickCallback?: () => void): Promise<void> {
         if (!Notification.isSupported()) {
             console.log('Notifications not supported');
             return;
@@ -50,7 +58,8 @@ export class NotificationManager {
         this.lastNotification = {
             title,
             body,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            ...metadata
         };
 
         console.log('[NotificationManager] Setting last notification:', this.lastNotification);
@@ -89,7 +98,10 @@ export class NotificationManager {
                 title: this.lastNotification.title,
                 body: this.lastNotification.body,
                 timestamp: new Date(this.lastNotification.timestamp).toISOString(),
-                age: `${Math.round((Date.now() - this.lastNotification.timestamp) / 1000)} seconds ago`
+                age: `${Math.round((Date.now() - this.lastNotification.timestamp) / 1000)} seconds ago`,
+                action: this.lastNotification.action ?? '',
+                start_date: this.lastNotification.start_date ?? '',
+                to_whom: this.lastNotification.to_whom ?? ''
             };
 
             console.log('✅ Last Notification:');
@@ -98,7 +110,17 @@ export class NotificationManager {
             // Process the notification when shortcut is pressed
             await this.notificationProcessor.processNotification({
                 title: this.lastNotification.title,
-                body: this.lastNotification.body
+                body: this.lastNotification.body,
+                metadata: {
+                    action: {
+                        actionType: this.lastNotification.action?.actionType ?? '',
+                        start_time: this.lastNotification.action?.start_time ?? '',
+                        end_time: this.lastNotification.action?.end_time ?? '',
+                        to_whom: this.lastNotification.action?.to_whom ?? ''
+                    },
+                    start_date: this.lastNotification.start_date ?? '',
+                    to_whom: this.lastNotification.to_whom ?? ''
+                }
             });
 
             // Close the active notification if it exists

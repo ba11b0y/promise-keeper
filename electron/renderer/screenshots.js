@@ -252,7 +252,17 @@ class ScreenshotManager {
 
                     // Show notification through main process
                     if (window.electronAPI?.notifications && notificationMessage) {
-                        window.electronAPI.notifications.show('Promise Keeper', notificationMessage);
+                        // Attempt to pass metadata from the first detected promise (if any)
+                        let metadata = undefined;
+                        if (result.promises && result.promises.length > 0) {
+                            const firstPromise = result.promises[0];
+                            metadata = {
+                                action: firstPromise.action || '',
+                                start_date: firstPromise.deadline ? String(firstPromise.deadline) : undefined,
+                                to_whom: firstPromise.to_whom ? String(firstPromise.to_whom) : undefined
+                            };
+                        }
+                        window.electronAPI.notifications.show('Promise Keeper', notificationMessage, metadata);
                     }
 
                     // Show enhanced indicator for new promises

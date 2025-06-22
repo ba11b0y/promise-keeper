@@ -261,9 +261,9 @@ class PromiseKeeperApp {
     });
 
     // Handle notifications
-    ipcMain.handle('show-notification', (_, { title, body }) => {
-      console.log('IPC: Showing notification:', { title, body });
-      this.notificationManager.showNotification(title, body, () => {
+    ipcMain.handle('show-notification', (_, { title, body, metadata }) => {
+      console.log('IPC: Showing notification:', { title, body, metadata });
+      this.notificationManager.showNotification(title, body, metadata ?? {}, () => {
         this.showWindow();
       });
     });
@@ -498,6 +498,7 @@ class PromiseKeeperApp {
     this.notificationManager.showNotification(
       'Promise Keeper',
       `Found ${count} promise${count > 1 ? 's' : ''} in your screen!`,
+      {},
       () => {
         console.log('Notification clicked, showing window');
         this.showWindow();

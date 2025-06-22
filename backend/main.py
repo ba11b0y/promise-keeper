@@ -128,11 +128,11 @@ async def extract_promises_from_file(file: UploadFile = File(...)):
         
         return PromiseListResponse(promises=[
             {
-                "content": p.content, 
-                "to_whom": p.to_whom, 
+                "content": p.content,
+                "to_whom": p.to_whom,
                 "deadline": p.deadline,
-                "potential_actions": p.potentialActionsToTake if hasattr(p, 'potentialActionsToTake') and p.potentialActionsToTake else []
-            } 
+                "action": getattr(p, 'action', '') or ''
+            }
             for p in promises.promises
         ])
     except Exception as e:
@@ -172,11 +172,11 @@ async def extract_promises_from_base64(request: ImageBase64Request):
         
         return PromiseListResponse(promises=[
             {
-                "content": p.content, 
-                "to_whom": p.to_whom, 
+                "content": p.content,
+                "to_whom": p.to_whom,
                 "deadline": p.deadline,
-                "potential_actions": p.potentialActionsToTake if hasattr(p, 'potentialActionsToTake') and p.potentialActionsToTake else []
-            } 
+                "action": getattr(p, 'action', '') or ''
+            }
             for p in promises.promises
         ])
     except Exception as e:
@@ -295,22 +295,26 @@ async def extract_promises_from_file_authenticated(
                     # Parse extraction_data to get original promise details
                     extraction_data = json.loads(existing.get("extraction_data", "{}"))
                     
-                    # Parse potential_actions if it exists in the database
-                    potential_actions = []
-                    if existing.get("potential_actions"):
+                    # Parse action column (JSON string/object) into BAML Action
+                    action_raw = existing.get("action")
+                    baml_action_obj = None
+                    if action_raw:
                         try:
-                            potential_actions_data = json.loads(existing["potential_actions"])
-                            # Convert to PotentialAction objects if needed
-                            potential_actions = potential_actions_data if isinstance(potential_actions_data, list) else []
-                        except (json.JSONDecodeError, TypeError):
-                            potential_actions = []
+                            if isinstance(action_raw, str):
+                                action_dict = json.loads(action_raw)
+                            else:
+                                action_dict = action_raw
+                            from baml_client.types import Action as BAMLAction
+                            baml_action_obj = BAMLAction(**action_dict)
+                        except Exception:
+                            baml_action_obj = None
                     
                     existing_promises_baml.append(BAMLPromise(
                         content=existing["content"],
                         reasoning=None,  # Don't need reasoning for existing promises
                         to_whom=extraction_data.get("to_whom"),
                         deadline=extraction_data.get("deadline"),
-                        potentialActionsToTake=potential_actions  # Required field
+                        action=baml_action_obj
                     ))
                 
                 # Use BAML to evaluate each promise individually
@@ -355,18 +359,18 @@ async def extract_promises_from_file_authenticated(
             try:
                 # Debug: Let's see what we're working with
                 print(f"Promise object: {promise}")
-                print(f"Promise potentialActionsToTake: {promise.potentialActionsToTake}")
+                print(f"Promise action: {promise.action}")
                 print(f"Promise reasoning: {promise.reasoning}")
                 
                 # Convert the promise to dict to easily serialize potential actions
-                promise_dict = promise.model_dump() if hasattr(promise, 'model_dump') else promise.__dict__
+                # promise_dict = promise.model_dump() if hasattr(promise, 'model_dump') else promise.__dict__
                 
-                potential_actions_data = []
+                # potential_actions_data = []
                 
                 # Add potential actions if present
-                if promise.potentialActionsToTake:
-                    potential_actions_data = promise_dict.get("potentialActionsToTake", [])
-                    print(f"Storing potential actions: {potential_actions_data}")
+                # if promise.potentialActionsToTake:
+                #     potential_actions_data = promise_dict.get("potentialActionsToTake", [])
+                #     print(f"Storing potential actions: {potential_actions_data}")
                 
                 promise_data = {
                     "content": promise.content,
@@ -379,10 +383,10 @@ async def extract_promises_from_file_authenticated(
                         "deadline": promise.deadline,
                         "raw_promise": promise.content
                     }),
-                    "potential_actions": json.dumps(potential_actions_data) if potential_actions_data else None
+                    "action": promise.action.model_dump() if getattr(promise, 'action', None) else None
                 }
                 
-                print(f"Final promise_data potential_actions: {promise_data['potential_actions']}")
+                # print(f"Final promise_data potential_actions: {promise_data['potential_actions']}")
                 
                 response = admin_client.table("promises").insert(promise_data).execute()
                 if response.data:
@@ -472,11 +476,11 @@ async def extract_promises_from_file_authenticated(
         return PromiseListResponse(
             promises=[
                 {
-                    "content": p.content, 
-                    "to_whom": p.to_whom, 
+                    "content": p.content,
+                    "to_whom": p.to_whom,
                     "deadline": p.deadline,
-                    "potential_actions": p.potentialActionsToTake if hasattr(p, 'potentialActionsToTake') and p.potentialActionsToTake else []
-                } 
+                    "action": p.action.model_dump() if getattr(p, 'action', None) else None
+                }
                 for p in new_promises_to_save
             ],
             resolved_promises=resolved_promises_info,

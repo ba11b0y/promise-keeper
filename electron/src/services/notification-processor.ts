@@ -3,6 +3,16 @@ import { mcpClient } from './mcp-client';
 interface NotificationContent {
     title: string;
     body: string;
+    metadata: {
+        action: {
+            actionType: string;
+            start_time: string;
+            end_time: string;
+            to_whom: string;
+        };
+        start_date: string;
+        to_whom: string;
+    }
 }
 
 export class NotificationProcessor {
@@ -22,14 +32,16 @@ export class NotificationProcessor {
     public async processNotification(notification: NotificationContent): Promise<void> {
         console.log('[NotificationProcessor] Processing notification:', notification);
 
-        if (this.containsMessagePromise(notification.body)) {
-            console.log('[NotificationProcessor] 📱 Message promise detected, processing...');
-            await this.handleMessagePromise(notification);
-        } else if (this.containsCalendarPromise(notification.body)) {
-            console.log('[NotificationProcessor] 📅 Calendar promise detected, processing...');
-            await this.handleCalendarPromise(notification);
-        } else {
-            console.log('[NotificationProcessor] No promise detected in this notification');
+        if (notification.metadata.action) {
+            // if (this.containsMessagePromise(notification.metadata.action)) {
+            //     console.log('[NotificationProcessor] 📱 Message promise detected, processing...');
+            //     await this.handleMessagePromise(notification);
+            if (this.containsCalendarPromise(notification.metadata.action.actionType)) {
+                console.log('[NotificationProcessor] 📅 Calendar promise detected, processing...');
+                await this.handleCalendarPromise(notification);
+            } else {
+                console.log('[NotificationProcessor] No promise detected in this notification');
+            }
         }
     }
 
@@ -60,7 +72,7 @@ export class NotificationProcessor {
             // Send the message using MCP client
             await mcpClient.sendMessage(
                 defaultPhoneNumber,
-                `Promise Keeper: ${notification.body}`
+                `${notification.body}`
             );
 
             console.log('[NotificationProcessor] ✅ Message sent successfully');

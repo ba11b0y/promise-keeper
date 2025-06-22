@@ -41,7 +41,8 @@ class PromiseManager {
             if (window.electronAPI?.notifications) {
                 window.electronAPI.notifications.show(
                     'Promise Added',
-                    `${content}`
+                    `${content}`,
+                    { action: 'promise_added', to_whom: '', start_date: '' }
                 );
             }
         }
@@ -203,6 +204,15 @@ class PromiseManager {
                 // Add to local promises list
                 this.promises.unshift(data);
                 this.renderPromises();
+
+                // Show notification when promise is added
+                if (window.electronAPI?.notifications) {
+                    window.electronAPI.notifications.show(
+                        'Promise Added',
+                        `${content}`,
+                        { action: 'promise_added', to_whom: '', start_date: '' }
+                    );
+                }
 
                 return data;
             }
