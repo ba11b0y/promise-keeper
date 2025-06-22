@@ -99,6 +99,19 @@ export class MCPClient {
         });
     }
 
+    // Calendar operations
+    async addCalendarEvent(title: string, startDate: string, endDate: string, calendar?: string) {
+        return this.callTool('calendar', {
+            name: 'add',
+            arguments: {
+                title,
+                startDate,
+                endDate,
+                ...(calendar && { calendar })
+            }
+        });
+    }
+
     // System operations
     async launchApp(appName: string) {
         return this.callTool('system', {

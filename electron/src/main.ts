@@ -305,6 +305,10 @@ class PromiseKeeperApp {
       return mcpClient.sendMessage(recipient, body, auto);
     });
 
+    ipcMain.handle('mcp-calendar-add', async (_, { title, startDate, endDate, calendar }: { title: string; startDate: string; endDate: string; calendar?: string }) => {
+      return mcpClient.addCalendarEvent(title, startDate, endDate, calendar);
+    });
+
     ipcMain.handle('mcp-system-launch-app', async (_, { appName }: { appName: string }) => {
       return mcpClient.launchApp(appName);
     });
