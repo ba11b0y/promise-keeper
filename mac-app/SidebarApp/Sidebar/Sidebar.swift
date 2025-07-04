@@ -8,7 +8,7 @@ import SwiftUI
 
 struct Sidebar: View {
         
-    @State var selection: SidebarPane? = nil
+    @State var selection: SidebarPane? = .electronPromises
     @State var searchText: String = ""
     @EnvironmentObject var supabaseManager: SupabaseManager
     

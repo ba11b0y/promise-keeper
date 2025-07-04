@@ -2,10 +2,12 @@ import SwiftUI
 
 struct PromisesPane: View {
     @StateObject private var promiseManager = PromiseManager()
+    @StateObject private var autoPromiseManager = AutoPromiseManager.shared
     @State private var newPromiseText = ""
     @State private var editingPromise: Promise?
     @State private var editingText = ""
     @State private var showingNewPromiseField = false
+    @State private var selectedCaptureMode: ScreenshotManager.CaptureMode = .onEnter
     
     var body: some View {
         Pane {
@@ -102,6 +104,57 @@ struct PromisesPane: View {
                     Divider()
                 }
                 
+                // Screenshot Controls (matching Electron app exactly)
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Screenshot Mode:")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            Picker("Mode", selection: $selectedCaptureMode) {
+                                ForEach(ScreenshotManager.CaptureMode.allCases, id: \.self) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .onChange(of: selectedCaptureMode) { newMode in
+                                autoPromiseManager.setCaptureMode(newMode)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Button("📸 Take Screenshot Now") {
+                            Task {
+                                await autoPromiseManager.processManualScreenshot()
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(autoPromiseManager.isProcessing)
+                    }
+                    
+                    // Processing status (identical to Electron app feedback)
+                    if let status = autoPromiseManager.processingStatus {
+                        HStack {
+                            if autoPromiseManager.isProcessing {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                            }
+                            Text(status)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(Color(.controlBackgroundColor).opacity(0.3))
+                
+                Divider()
+                
                 // Promises list
                 if promiseManager.isLoading && promiseManager.promises.isEmpty {
                     VStack(spacing: 12) {
@@ -147,7 +200,7 @@ struct PromisesPane: View {
                                     onEdit: { startEditing(promise) },
                                     onSave: { await savePromise(promise) },
                                     onCancel: { cancelEditing() },
-                                    onDelete: { await promiseManager.deletePromise(id: promise.identifiableId) }
+                                    onDelete: { await promiseManager.deletePromise(String(promise.identifiableId)) }
                                 )
                                 
                                 if promise.identifiableId != promiseManager.promises.last?.identifiableId {
@@ -162,6 +215,9 @@ struct PromisesPane: View {
         }
         .task {
             await promiseManager.fetchPromises()
+        }
+        .onAppear {
+            selectedCaptureMode = autoPromiseManager.getCaptureMode()
         }
     }
     

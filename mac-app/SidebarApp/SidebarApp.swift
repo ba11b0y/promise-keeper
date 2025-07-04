@@ -2,7 +2,6 @@ import SwiftUI
 
 @main
 struct SidebarApp: App {
-    
     /// Legacy app delegate.
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     

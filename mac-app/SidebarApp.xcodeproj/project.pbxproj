@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 55;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,7 +11,6 @@
 		25D4AD8D2E07339900F48470 /* AuthenticatedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D4AD852E07339900F48470 /* AuthenticatedView.swift */; };
 		25D4AD8E2E07339900F48470 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D4AD862E07339900F48470 /* AuthView.swift */; };
 		25D4AD8F2E07339900F48470 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D4AD882E07339900F48470 /* SupabaseConfig.swift */; };
-		25D4AD902E07339900F48470 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D4AD892E07339900F48470 /* SupabaseManager.swift */; };
 		25D4AD912E07339900F48470 /* EnvironmentConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D4AD872E07339900F48470 /* EnvironmentConfig.swift */; };
 		25D4AD972E0737C900F48470 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 25D4AD962E0737C900F48470 /* Auth */; };
 		25D4AD992E0737C900F48470 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 25D4AD982E0737C900F48470 /* Functions */; };
@@ -39,7 +38,6 @@
 		4180AEDE283985190054FEA9 /* MyExportDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AEDD283985190054FEA9 /* MyExportDocument.swift */; };
 		4180AEE128398F460054FEA9 /* PaneBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AEE028398F460054FEA9 /* PaneBackground.swift */; };
 		4180AEE328398FE50054FEA9 /* Pane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AEE228398FE50054FEA9 /* Pane.swift */; };
-		4180AEE728399E160054FEA9 /* MyCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AEE628399E160054FEA9 /* MyCommands.swift */; };
 		4180AEEB2839A0280054FEA9 /* AboutCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AEEA2839A0280054FEA9 /* AboutCommand.swift */; };
 		4180AEEE2839A0660054FEA9 /* Bundle+Name.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AEED2839A0660054FEA9 /* Bundle+Name.swift */; };
 		4180AEF12839A0830054FEA9 /* Bundle+Version.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180AEF02839A0830054FEA9 /* Bundle+Version.swift */; };
@@ -60,7 +58,51 @@
 		B7E076A82E073E3B0003AE17 /* NotifcationsSidebarSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E076A72E073E3B0003AE17 /* NotifcationsSidebarSection.swift */; };
 		B7E076AB2E073EAE0003AE17 /* NotificationsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E076AA2E073EAE0003AE17 /* NotificationsPane.swift */; };
 		B7E076AD2E073ED30003AE17 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E076AC2E073ED30003AE17 /* NotificationManager.swift */; };
+		BE886AE22E13742F000718A1 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE886AE12E13742F000718A1 /* WidgetKit.framework */; };
+		BE886AE42E13742F000718A1 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BE886AE32E13742F000718A1 /* SwiftUI.framework */; };
+		BE886AF22E137430000718A1 /* PromiseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BE886AE02E13742F000718A1 /* PromiseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BE886C0B2E138563000718A1 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D4AD892E07339900F48470 /* SupabaseManager.swift */; };
+		BE886C312E14E544000718A1 /* SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C302E14E544000718A1 /* SharedDataManager.swift */; };
+		BE886C332E14E55D000718A1 /* WidgetDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C322E14E55D000718A1 /* WidgetDebugView.swift */; };
+		BE886C352E14E9B1000718A1 /* WidgetDebugManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C342E14E9B1000718A1 /* WidgetDebugManager.swift */; };
+		BE886C3D2E14ED87000718A1 /* SharedSupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C3C2E14ED87000718A1 /* SharedSupabaseManager.swift */; };
+		BE886C3E2E14ED87000718A1 /* SharedSupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C3C2E14ED87000718A1 /* SharedSupabaseManager.swift */; };
+		BE886C402E14F374000718A1 /* WidgetDataSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C3F2E14F374000718A1 /* WidgetDataSyncManager.swift */; };
+		BE886C422E14F387000718A1 /* WidgetSyncDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C412E14F387000718A1 /* WidgetSyncDebugView.swift */; };
+		BE886C482E15A17B000718A1 /* UnifiedSharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE886C472E15A17B000718A1 /* UnifiedSharedDataManager.swift */; };
+		MANAGER_AUTOPROMISE_BUILD /* AutoPromiseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = MANAGER_AUTOPROMISE_REF /* AutoPromiseManager.swift */; };
+		MANAGER_BAMLAPI_BUILD /* BAMLAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = MANAGER_BAMLAPI_REF /* BAMLAPIClient.swift */; };
+		MANAGER_MCP_BUILD /* MCPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = MANAGER_MCP_REF /* MCPClient.swift */; };
+		MANAGER_SCREENSHOT_BUILD /* ScreenshotManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = MANAGER_SCREENSHOT_REF /* ScreenshotManager.swift */; };
+		VIEW_COMPACT_BUILD /* CompactPromiseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_COMPACT_REF /* CompactPromiseView.swift */; };
+		VIEW_ELECTRON_BUILD /* ElectronMatchingPromiseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_ELECTRON_REF /* ElectronMatchingPromiseView.swift */; };
+		VIEW_MODERN_BUILD /* ModernPromiseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_MODERN_REF /* ModernPromiseView.swift */; };
+		VIEW_SHARED_STYLES_BUILD /* SharedStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_SHARED_STYLES_REF /* SharedStyles.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BE886AF02E137430000718A1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4180AEA22839753E0054FEA9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BE886ADF2E13742F000718A1;
+			remoteInfo = PromiseWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BE886AF32E137430000718A1 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BE886AF22E137430000718A1 /* PromiseWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		25D4AD852E07339900F48470 /* AuthenticatedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatedView.swift; sourceTree = "<group>"; };
@@ -91,7 +133,6 @@
 		4180AEDD283985190054FEA9 /* MyExportDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyExportDocument.swift; sourceTree = "<group>"; };
 		4180AEE028398F460054FEA9 /* PaneBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaneBackground.swift; sourceTree = "<group>"; };
 		4180AEE228398FE50054FEA9 /* Pane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pane.swift; sourceTree = "<group>"; };
-		4180AEE628399E160054FEA9 /* MyCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyCommands.swift; sourceTree = "<group>"; };
 		4180AEEA2839A0280054FEA9 /* AboutCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutCommand.swift; sourceTree = "<group>"; };
 		4180AEED2839A0660054FEA9 /* Bundle+Name.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Name.swift"; sourceTree = "<group>"; };
 		4180AEF02839A0830054FEA9 /* Bundle+Version.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Version.swift"; sourceTree = "<group>"; };
@@ -112,19 +153,62 @@
 		B7E076A72E073E3B0003AE17 /* NotifcationsSidebarSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotifcationsSidebarSection.swift; sourceTree = "<group>"; };
 		B7E076AA2E073EAE0003AE17 /* NotificationsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationsPane.swift; path = SidebarApp/Panes/NotificationsPane.swift; sourceTree = SOURCE_ROOT; };
 		B7E076AC2E073ED30003AE17 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		BE1248112E179E930020B45C /* SidebarAppRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SidebarAppRelease.entitlements; sourceTree = "<group>"; };
+		BE886AE02E13742F000718A1 /* PromiseWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PromiseWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BE886AE12E13742F000718A1 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		BE886AE32E13742F000718A1 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		BE886C302E14E544000718A1 /* SharedDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDataManager.swift; sourceTree = "<group>"; };
+		BE886C322E14E55D000718A1 /* WidgetDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDebugView.swift; sourceTree = "<group>"; };
+		BE886C342E14E9B1000718A1 /* WidgetDebugManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDebugManager.swift; sourceTree = "<group>"; };
+		BE886C3C2E14ED87000718A1 /* SharedSupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSupabaseManager.swift; sourceTree = "<group>"; };
+		BE886C3F2E14F374000718A1 /* WidgetDataSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataSyncManager.swift; sourceTree = "<group>"; };
+		BE886C412E14F387000718A1 /* WidgetSyncDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSyncDebugView.swift; sourceTree = "<group>"; };
+		BE886C472E15A17B000718A1 /* UnifiedSharedDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSharedDataManager.swift; sourceTree = "<group>"; };
+		BE886C532E179004000718A1 /* PromiseWidgetExtensionDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PromiseWidgetExtensionDebug.entitlements; sourceTree = "<group>"; };
+		MANAGER_AUTOPROMISE_REF /* AutoPromiseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPromiseManager.swift; sourceTree = "<group>"; };
+		MANAGER_BAMLAPI_REF /* BAMLAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BAMLAPIClient.swift; sourceTree = "<group>"; };
+		MANAGER_MCP_REF /* MCPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPClient.swift; sourceTree = "<group>"; };
+		MANAGER_SCREENSHOT_REF /* ScreenshotManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotManager.swift; sourceTree = "<group>"; };
+		VIEW_COMPACT_REF /* CompactPromiseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactPromiseView.swift; sourceTree = "<group>"; };
+		VIEW_ELECTRON_REF /* ElectronMatchingPromiseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElectronMatchingPromiseView.swift; sourceTree = "<group>"; };
+		VIEW_MODERN_REF /* ModernPromiseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernPromiseView.swift; sourceTree = "<group>"; };
+		VIEW_SHARED_STYLES_REF /* SharedStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStyles.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BE886AF62E137430000718A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BE886ADF2E13742F000718A1 /* PromiseWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		BE886AE52E13742F000718A1 /* PromiseWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BE886AF62E137430000718A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = PromiseWidget; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		4180AEA72839753E0054FEA9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				25D4AD9B2E0737C900F48470 /* PostgREST in Frameworks */,
 				25D4AD992E0737C900F48470 /* Functions in Frameworks */,
 				25D4ADA12E0737C900F48470 /* Supabase in Frameworks */,
 				25D4AD972E0737C900F48470 /* Auth in Frameworks */,
 				25D4AD9F2E0737C900F48470 /* Storage in Frameworks */,
 				25D4AD9D2E0737C900F48470 /* Realtime in Frameworks */,
+				25D4AD9B2E0737C900F48470 /* PostgREST in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE886ADD2E13742F000718A1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE886AE42E13742F000718A1 /* SwiftUI.framework in Frameworks */,
+				BE886AE22E13742F000718A1 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +231,8 @@
 		25D4AD952E0737C900F48470 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				BE886AE12E13742F000718A1 /* WidgetKit.framework */,
+				BE886AE32E13742F000718A1 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -154,7 +240,9 @@
 		4180AEA12839753E0054FEA9 = {
 			isa = PBXGroup;
 			children = (
+				BE886C532E179004000718A1 /* PromiseWidgetExtensionDebug.entitlements */,
 				4180AEAC2839753E0054FEA9 /* SidebarApp */,
+				BE886AE52E13742F000718A1 /* PromiseWidget */,
 				25D4AD952E0737C900F48470 /* Frameworks */,
 				4180AEAB2839753E0054FEA9 /* Products */,
 			);
@@ -164,6 +252,7 @@
 			isa = PBXGroup;
 			children = (
 				4180AEAA2839753E0054FEA9 /* SidebarApp.app */,
+				BE886AE02E13742F000718A1 /* PromiseWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -171,9 +260,11 @@
 		4180AEAC2839753E0054FEA9 /* SidebarApp */ = {
 			isa = PBXGroup;
 			children = (
+				BE1248112E179E930020B45C /* SidebarAppRelease.entitlements */,
 				25D4AD8B2E07339900F48470 /* Auth */,
 				5000000100000000000000010 /* Models */,
 				5000000100000000000000011 /* Managers */,
+				VIEWS_GROUP /* Views */,
 				4180AEEC2839A0560054FEA9 /* Utilities */,
 				4180AF032839A87B0054FEA9 /* Custom Views */,
 				4180AEBE283976620054FEA9 /* Settings */,
@@ -257,7 +348,6 @@
 		4180AEE428399DC50054FEA9 /* My Menu Commands */ = {
 			isa = PBXGroup;
 			children = (
-				4180AEE628399E160054FEA9 /* MyCommands.swift */,
 			);
 			path = "My Menu Commands";
 			sourceTree = "<group>";
@@ -349,9 +439,31 @@
 		5000000100000000000000011 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				BE886C472E15A17B000718A1 /* UnifiedSharedDataManager.swift */,
+				BE886C3F2E14F374000718A1 /* WidgetDataSyncManager.swift */,
+				BE886C3C2E14ED87000718A1 /* SharedSupabaseManager.swift */,
+				BE886C342E14E9B1000718A1 /* WidgetDebugManager.swift */,
+				BE886C302E14E544000718A1 /* SharedDataManager.swift */,
 				50000001000000000000000D /* PromiseManager.swift */,
+				MANAGER_SCREENSHOT_REF /* ScreenshotManager.swift */,
+				MANAGER_AUTOPROMISE_REF /* AutoPromiseManager.swift */,
+				MANAGER_BAMLAPI_REF /* BAMLAPIClient.swift */,
+				MANAGER_MCP_REF /* MCPClient.swift */,
 			);
 			path = Managers;
+			sourceTree = "<group>";
+		};
+		VIEWS_GROUP /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				BE886C412E14F387000718A1 /* WidgetSyncDebugView.swift */,
+				BE886C322E14E55D000718A1 /* WidgetDebugView.swift */,
+				VIEW_COMPACT_REF /* CompactPromiseView.swift */,
+				VIEW_MODERN_REF /* ModernPromiseView.swift */,
+				VIEW_SHARED_STYLES_REF /* SharedStyles.swift */,
+				VIEW_ELECTRON_REF /* ElectronMatchingPromiseView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -364,15 +476,39 @@
 				4180AEA62839753E0054FEA9 /* Sources */,
 				4180AEA72839753E0054FEA9 /* Frameworks */,
 				4180AEA82839753E0054FEA9 /* Resources */,
+				BE886AF32E137430000718A1 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				BE886AF12E137430000718A1 /* PBXTargetDependency */,
 			);
 			name = SidebarApp;
 			productName = SidebarApp;
 			productReference = 4180AEAA2839753E0054FEA9 /* SidebarApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		BE886ADF2E13742F000718A1 /* PromiseWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE886AF72E137430000718A1 /* Build configuration list for PBXNativeTarget "PromiseWidgetExtension" */;
+			buildPhases = (
+				BE886ADC2E13742F000718A1 /* Sources */,
+				BE886ADD2E13742F000718A1 /* Frameworks */,
+				BE886ADE2E13742F000718A1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BE886AE52E13742F000718A1 /* PromiseWidget */,
+			);
+			name = PromiseWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = PromiseWidgetExtension;
+			productReference = BE886AE02E13742F000718A1 /* PromiseWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -381,11 +517,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1340;
+				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					4180AEA92839753E0054FEA9 = {
 						CreatedOnToolsVersion = 13.4;
+					};
+					BE886ADF2E13742F000718A1 = {
+						CreatedOnToolsVersion = 16.2;
 					};
 				};
 			};
@@ -400,12 +539,15 @@
 			mainGroup = 4180AEA12839753E0054FEA9;
 			packageReferences = (
 				25D4AD942E0737AF00F48470 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				SWIFT_CLOCKS_OVERRIDE /* XCRemoteSwiftPackageReference "swift-clocks" */,
+				CONCURRENCY_EXTRAS_OVERRIDE /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */,
 			);
 			productRefGroup = 4180AEAB2839753E0054FEA9 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				4180AEA92839753E0054FEA9 /* SidebarApp */,
+				BE886ADF2E13742F000718A1 /* PromiseWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -417,6 +559,13 @@
 			files = (
 				4180AEB52839753F0054FEA9 /* Preview Assets.xcassets in Resources */,
 				4180AEB22839753F0054FEA9 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE886ADE2E13742F000718A1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -437,19 +586,21 @@
 				4180AECE28397C880054FEA9 /* WhatsUpPane.swift in Sources */,
 				4180AF052839A89A0054FEA9 /* DropTarget.swift in Sources */,
 				4180AF092839B0870054FEA9 /* AlwaysOnTop.swift in Sources */,
+				BE886C312E14E544000718A1 /* SharedDataManager.swift in Sources */,
 				4180AEC4283979530054FEA9 /* MainView.swift in Sources */,
 				4180AEE328398FE50054FEA9 /* Pane.swift in Sources */,
 				B7E076A82E073E3B0003AE17 /* NotifcationsSidebarSection.swift in Sources */,
 				4180AF11283A50770054FEA9 /* MenuBarPopup.swift in Sources */,
 				4180AEC7283979FA0054FEA9 /* Sidebar.swift in Sources */,
 				25D4AD8C2E07339900F48470 /* UserProfileView.swift in Sources */,
+				BE886C352E14E9B1000718A1 /* WidgetDebugManager.swift in Sources */,
 				25D4AD8D2E07339900F48470 /* AuthenticatedView.swift in Sources */,
 				25D4AD8E2E07339900F48470 /* AuthView.swift in Sources */,
 				25D4AD8F2E07339900F48470 /* SupabaseConfig.swift in Sources */,
-				25D4AD902E07339900F48470 /* SupabaseManager.swift in Sources */,
 				25D4AD912E07339900F48470 /* EnvironmentConfig.swift in Sources */,
 				4180AF072839AF320054FEA9 /* WindowReflection.swift in Sources */,
 				4180AEC2283976F80054FEA9 /* GeneralSettingsView.swift in Sources */,
+				BE886C402E14F374000718A1 /* WidgetDataSyncManager.swift in Sources */,
 				4180AEF52839A1370054FEA9 /* NSWindow+AlwaysOnTop.swift in Sources */,
 				4180AEF92839A21F0054FEA9 /* AboutWindow.swift in Sources */,
 				4180AEE128398F460054FEA9 /* PaneBackground.swift in Sources */,
@@ -459,23 +610,51 @@
 				4180AEF32839A0950054FEA9 /* Bundle+Copyright.swift in Sources */,
 				4180AED028397DB00054FEA9 /* MoreStuffPane.swift in Sources */,
 				4180AEC0283976740054FEA9 /* SettingsWindow.swift in Sources */,
+				BE886C332E14E55D000718A1 /* WidgetDebugView.swift in Sources */,
 				B7E076AB2E073EAE0003AE17 /* NotificationsPane.swift in Sources */,
 				4180AED9283983150054FEA9 /* SidebarFooter.swift in Sources */,
+				BE886C482E15A17B000718A1 /* UnifiedSharedDataManager.swift in Sources */,
 				4180AEFE2839A3B30054FEA9 /* AttributionsWindow.swift in Sources */,
-				4180AEE728399E160054FEA9 /* MyCommands.swift in Sources */,
 				B7E076AD2E073ED30003AE17 /* NotificationManager.swift in Sources */,
 				4180AEEB2839A0280054FEA9 /* AboutCommand.swift in Sources */,
 				4180AED228397F100054FEA9 /* GeneralSidebarSection.swift in Sources */,
 				4180AEAE2839753E0054FEA9 /* SidebarApp.swift in Sources */,
 				4180AED428397F790054FEA9 /* SidebarPane.swift in Sources */,
 				4180AECC28397C6F0054FEA9 /* HelloWorldPane.swift in Sources */,
+				BE886C422E14F387000718A1 /* WidgetSyncDebugView.swift in Sources */,
 				50000001000000000000000A /* Promise.swift in Sources */,
 				50000001000000000000000C /* PromiseManager.swift in Sources */,
 				50000001000000000000000E /* PromisesPane.swift in Sources */,
+				MANAGER_SCREENSHOT_BUILD /* ScreenshotManager.swift in Sources */,
+				BE886C3E2E14ED87000718A1 /* SharedSupabaseManager.swift in Sources */,
+				MANAGER_AUTOPROMISE_BUILD /* AutoPromiseManager.swift in Sources */,
+				MANAGER_BAMLAPI_BUILD /* BAMLAPIClient.swift in Sources */,
+				MANAGER_MCP_BUILD /* MCPClient.swift in Sources */,
+				BE886C0B2E138563000718A1 /* SupabaseManager.swift in Sources */,
+				VIEW_COMPACT_BUILD /* CompactPromiseView.swift in Sources */,
+				VIEW_MODERN_BUILD /* ModernPromiseView.swift in Sources */,
+				VIEW_SHARED_STYLES_BUILD /* SharedStyles.swift in Sources */,
+				VIEW_ELECTRON_BUILD /* ElectronMatchingPromiseView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE886ADC2E13742F000718A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE886C3D2E14ED87000718A1 /* SharedSupabaseManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BE886AF12E137430000718A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BE886ADF2E13742F000718A1 /* PromiseWidgetExtension */;
+			targetProxy = BE886AF02E137430000718A1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4180AEB72839753F0054FEA9 /* Debug */ = {
@@ -530,7 +709,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -586,7 +765,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -601,12 +780,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = SidebarApp/SidebarApp.entitlements;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"SidebarApp/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = TX645N2QBW;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -618,7 +799,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.mac.SidebarApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -633,13 +814,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = SidebarApp/SidebarApp.entitlements;
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_ENTITLEMENTS = SidebarApp/SidebarAppRelease.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"SidebarApp/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = TX645N2QBW;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -651,11 +834,78 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.mac.SidebarApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		BE886AF42E137430000718A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = PromiseWidgetExtensionDebug.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = TX645N2QBW;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PromiseWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PromiseWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.mac.SidebarApp.PromiseWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BE886AF52E137430000718A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = PromiseWidget/PromiseWidget.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = TX645N2QBW;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PromiseWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PromiseWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.mac.SidebarApp.PromiseWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -682,6 +932,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		BE886AF72E137430000718A1 /* Build configuration list for PBXNativeTarget "PromiseWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE886AF42E137430000718A1 /* Debug */,
+				BE886AF52E137430000718A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -689,8 +948,24 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.5.1;
+				kind = exactVersion;
+				version = 2.29.3;
+			};
+		};
+		CONCURRENCY_EXTRAS_OVERRIDE /* XCRemoteSwiftPackageReference "swift-concurrency-extras" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-concurrency-extras";
+			requirement = {
+				kind = exactVersion;
+				version = 1.3.1;
+			};
+		};
+		SWIFT_CLOCKS_OVERRIDE /* XCRemoteSwiftPackageReference "swift-clocks" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-clocks";
+			requirement = {
+				kind = exactVersion;
+				version = 1.0.6;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

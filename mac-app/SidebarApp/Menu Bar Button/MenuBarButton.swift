@@ -13,7 +13,7 @@ class MenuBarButton {
             return
         }
         
-        button.image = NSImage(systemSymbolName: "hammer", accessibilityDescription: nil)
+        button.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "Promise Keeper")
         button.imagePosition = NSControl.ImagePosition.imageOnly
         button.target = self
         button.action = #selector(showMenu(_:))
@@ -47,8 +47,11 @@ class MenuBarButton {
         
     func showSecondaryMenu() {
         let menu = NSMenu()
-        addItem("About...", action: #selector(showAbout), key: "c", to: menu)
-        addItem("Do Stuff", action: #selector(doStuff), key: "d", to: menu)
+        addItem("Show Promise Keeper", action: #selector(showApp), key: "", to: menu)
+        addItem("Add Promise", action: #selector(addPromise), key: "", to: menu)
+        addItem("Take Screenshot Now", action: #selector(takeScreenshot), key: "", to: menu)
+        menu.addItem(NSMenuItem.separator())
+        addItem("About...", action: #selector(showAbout), key: "", to: menu)
         menu.addItem(NSMenuItem.separator())
         addItem("Quit", action: #selector(quit), key: "q", to: menu)
         showStatusItemMenu(menu)
@@ -82,8 +85,37 @@ class MenuBarButton {
     }
 
     @objc
-    func doStuff() {
-        print("Do stuff")
+    func showApp() {
+        NSApp.activate(ignoringOtherApps: true)
+        // Focus main window if exists
+        if let window = NSApp.windows.first {
+            window.makeKeyAndOrderFront(nil)
+        }
+    }
+    
+    @objc
+    func addPromise() {
+        showApp()
+        // TODO: Focus the add promise input field
+        // This would require communication with the SwiftUI views
+    }
+    
+    @objc
+    func takeScreenshot() {
+        Task { @MainActor in
+            await AutoPromiseManager.shared.processManualScreenshot()
+        }
+    }
+    
+    @objc
+    func showMCPStatus() {
+        Task { @MainActor in
+            let mcpClient = MCPClient.shared
+            print("MCP Status - Connected: \(mcpClient.isConnected)")
+            if let error = mcpClient.errorMessage {
+                print("MCP Error: \(error)")
+            }
+        }
     }
 }
 

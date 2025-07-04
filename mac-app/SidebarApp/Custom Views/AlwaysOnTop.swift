@@ -13,10 +13,10 @@ struct AlwaysOnTop: View {
 
     var body: some View {
         WindowReflection(window: $window)
-            .onReceive(window.publisher) { window in
-                window.alwaysOnTop = isAlwaysOnTop
+            .onReceive(window.publisher) { currentWindow in
+                currentWindow.alwaysOnTop = isAlwaysOnTop
             }
-            .onChange(of: isAlwaysOnTop) { isOnTop in
+            .onChange(of: isAlwaysOnTop) { _, isOnTop in
                 window?.alwaysOnTop = isOnTop
             }
     }

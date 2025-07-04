@@ -5,6 +5,7 @@ enum SidebarPane {
     // MARK: Promise Section
 
     case promises
+    case electronPromises
     
     // MARK: General Section
 

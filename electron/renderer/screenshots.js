@@ -6,7 +6,7 @@ class ScreenshotManager {
         this.screenshotMode = 'enter'; // 'off', 'interval', 'enter'
         this.manualScreenshotRequested = false; // Flag for manual screenshots
         this.lastEnterScreenshot = 0; // Track last enter screenshot time
-        this.enterScreenshotCooldown = 60000; // 1 minute cooldown for enter mode
+        this.enterScreenshotCooldown = 1; // 1 millisecond cooldown for enter mode
         
         // Initialize action handlers
         this.actionHandlers = new window.PromiseKeeperActionHandlers(app);

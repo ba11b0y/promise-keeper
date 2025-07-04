@@ -8,10 +8,29 @@ struct Promise: Codable, Identifiable, Equatable {
     let updated_at: Date
     let content: String
     let owner_id: UUID
+    let resolved: Bool?
+    let extracted_from_screenshot: Bool?
+    let screenshot_id: String?
+    let screenshot_timestamp: String?
+    let resolved_screenshot_id: String?
+    let resolved_screenshot_time: String?
+    let resolved_reason: String?
+    let extraction_data: String?
+    let action: String?
+    let metadata: String?
     
     // For Identifiable protocol - use a computed property
     var identifiableId: Int64 {
         return id ?? 0
+    }
+    
+    // Computed properties for convenience
+    var isResolved: Bool {
+        return resolved ?? false
+    }
+    
+    var isFromScreenshot: Bool {
+        return extracted_from_screenshot ?? false
     }
     
     // Coding keys to match database column names
@@ -21,6 +40,16 @@ struct Promise: Codable, Identifiable, Equatable {
         case updated_at
         case content
         case owner_id
+        case resolved
+        case extracted_from_screenshot
+        case screenshot_id
+        case screenshot_timestamp
+        case resolved_screenshot_id
+        case resolved_screenshot_time
+        case resolved_reason
+        case extraction_data
+        case action
+        case metadata
     }
 }
 

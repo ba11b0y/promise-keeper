@@ -12,7 +12,11 @@ struct AuthenticatedView<Content: View>: View {
     
     var body: some View {
         let isAuth = supabaseManager.isAuthenticated
+        let currentUser = supabaseManager.currentUser
         print("🔄 AuthenticatedView body evaluation - isAuthenticated: \(isAuth)")
+        NSLog("🔄 AuthenticatedView body evaluation - isAuthenticated: \(isAuth)")
+        print("🔄 AuthenticatedView currentUser: \(currentUser?.email ?? "nil")")
+        NSLog("🔄 AuthenticatedView currentUser: \(currentUser?.email ?? "nil")")
         
         return Group {
             if isAuth {

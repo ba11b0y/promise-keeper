@@ -8,10 +8,23 @@ struct GeneralSidebarSection: View {
         
         Section(header: Text("Promise Keeper")) {
 			
-			NavigationLink {
-				PromisesPane()
-			} label: {
+			// Keeping deprecated NavigationLink for now to avoid major refactoring
+			// TODO: Migrate to NavigationStack when ready
+			NavigationLink(
+				destination: PromisesPane(),
+				tag: SidebarPane.promises,
+				selection: $selection
+			) {
 				Label("My Promises", systemImage: "heart.text.square")
+			}
+			
+			NavigationLink(
+				destination: ElectronMatchingPromiseView()
+					.environmentObject(SupabaseManager.shared),
+				tag: SidebarPane.electronPromises,
+				selection: $selection
+			) {
+				Label("Promise Widget", systemImage: "sidebar.squares.right")
 			}
         }
         

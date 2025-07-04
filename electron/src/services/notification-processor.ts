@@ -93,24 +93,46 @@ export class NotificationProcessor {
             // Use start date from metadata or fallback to tomorrow if not provided
             let startDateTime = new Date();
             if (notification.metadata?.action?.start_time) {
-                // Parse the date but keep the intended local hour (8 AM)
-                const utcDate = new Date(notification.metadata.action.start_time);
-
-                // Create a date string in Pacific Time
-                const year = utcDate.getUTCFullYear();
-                const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-                const day = String(utcDate.getUTCDate()).padStart(2, '0');
-
-                // Use 8 AM in Pacific Time
-                startDateTime = new Date(`${year}-${month}-${day}T08:00:00-07:00`);
+                // Parse the actual datetime from the BAML response
+                startDateTime = new Date(notification.metadata.action.start_time);
 
                 console.log('[NotificationProcessor] Using start time from metadata:', {
                     originalUTC: notification.metadata.action.start_time,
                     parsedDate: startDateTime.toISOString(),
-                    localTime: startDateTime.toString()
+                    localTime: startDateTime.toString(),
+                    pacificTime: startDateTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })
+                });
+            } else if (notification.metadata?.start_date) {
+                // Parse the start_date text (e.g., "Tomorrow at 8")
+                const startDateText = notification.metadata.start_date.toLowerCase();
+                const now = new Date();
+                
+                // Default to tomorrow
+                startDateTime = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+                
+                // Extract hour from text
+                let hour = 10; // default fallback
+                const timeMatch = startDateText.match(/at (\d+)/);
+                if (timeMatch) {
+                    hour = parseInt(timeMatch[1]);
+                    // Handle AM/PM if specified
+                    if (startDateText.includes('pm') && hour < 12) {
+                        hour += 12;
+                    } else if (startDateText.includes('am') && hour === 12) {
+                        hour = 0;
+                    }
+                }
+                
+                startDateTime.setHours(hour, 0, 0, 0);
+                
+                console.log('[NotificationProcessor] Parsed time from start_date:', {
+                    originalText: notification.metadata.start_date,
+                    extractedHour: hour,
+                    resultingDateTime: startDateTime.toISOString(),
+                    pacificTime: startDateTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })
                 });
             } else {
-                // Fallback to tomorrow at 10 AM Pacific Time
+                // Final fallback to tomorrow at 10 AM Pacific Time
                 const now = new Date();
                 startDateTime = new Date(now.getTime() + (24 * 60 * 60 * 1000)); // add 24 hours
                 startDateTime.setHours(10, 0, 0);
