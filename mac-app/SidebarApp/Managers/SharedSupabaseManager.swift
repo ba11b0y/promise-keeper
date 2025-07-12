@@ -17,13 +17,14 @@ public struct SharedSupabaseManager {
         static let supabaseSession = "supabase_session"
         static let sessionExpiry = "supabase_session_expiry"
         static let userEmail = "supabase_user_email"
+        static let accessToken = "supabase_access_token"
     }
     
     // MARK: - Session Storage
     
     /// Store the session data in Keychain for widget access
     /// This is used by the main app after successful authentication
-    public static func storeSessionData(userId: String, email: String?, expiresAt: Date?) {
+    public static func storeSessionData(userId: String, email: String?, expiresAt: Date?, accessToken: String?) {
         // Store user ID
         if let userIdData = userId.data(using: .utf8) {
             _ = storeInKeychain(data: userIdData, forKey: "supabase_user_id")
@@ -43,6 +44,11 @@ public struct SharedSupabaseManager {
             }
         }
         
+        // Store access token if available
+        if let accessToken = accessToken, let tokenData = accessToken.data(using: .utf8) {
+            _ = storeInKeychain(data: tokenData, forKey: KeychainKeys.accessToken)
+        }
+        
         // Mark session as valid
         _ = storeInKeychain(data: "true".data(using: .utf8)!, forKey: KeychainKeys.supabaseSession)
         
@@ -59,6 +65,7 @@ public struct SharedSupabaseManager {
         _ = deleteFromKeychain(key: KeychainKeys.supabaseSession)
         _ = deleteFromKeychain(key: KeychainKeys.sessionExpiry)
         _ = deleteFromKeychain(key: KeychainKeys.userEmail)
+        _ = deleteFromKeychain(key: KeychainKeys.accessToken)
         _ = deleteFromKeychain(key: "supabase_user_id")
         
         print("🗑️ Cleared Supabase session from Keychain")
@@ -100,26 +107,14 @@ public struct SharedSupabaseManager {
         return true
     }
     
-    /// Get session info for widget use
-    public static func getSessionForWidget() -> (userId: String?, email: String?, isAuthenticated: Bool) {
-        guard hasValidSession() else {
-            return (nil, nil, false)
+    /// Get access token for widget use
+    public static func getAccessTokenForWidget() -> String? {
+        // Get access token
+        if let tokenData = loadFromKeychain(key: KeychainKeys.accessToken) {
+            return String(data: tokenData, encoding: .utf8)
         }
         
-        var userId: String? = nil
-        var email: String? = nil
-        
-        // Get user ID
-        if let userIdData = loadFromKeychain(key: "supabase_user_id") {
-            userId = String(data: userIdData, encoding: .utf8)
-        }
-        
-        // Get email
-        if let emailData = loadFromKeychain(key: KeychainKeys.userEmail) {
-            email = String(data: emailData, encoding: .utf8)
-        }
-        
-        return (userId, email, true)
+        return nil
     }
     
     /// Check if user is authenticated (quick check without creating client)

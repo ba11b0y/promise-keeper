@@ -169,10 +169,10 @@ struct WidgetSyncDebugView: View {
         
         // Check Keychain
         debugOutput += "\n📱 Keychain Data:\n"
-        let sessionInfo = SharedSupabaseManager.getSessionForWidget()
-        debugOutput += "Authenticated: \(sessionInfo.isAuthenticated)\n"
-        debugOutput += "User ID: \(sessionInfo.userId ?? "nil")\n"
-        debugOutput += "Email: \(sessionInfo.email ?? "nil")\n"
+        let accessToken = SharedSupabaseManager.getAccessTokenForWidget()
+        debugOutput += "Access Token Present: \(accessToken != nil)\n"
+        debugOutput += "Is Authenticated: \(SharedSupabaseManager.isAuthenticated)\n"
+        debugOutput += "User Email: \(SharedSupabaseManager.userEmail ?? "nil")\n"
     }
 }
 

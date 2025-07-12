@@ -140,7 +140,8 @@ class SupabaseManager: ObservableObject {
                 SharedSupabaseManager.storeSessionData(
                     userId: user.id.uuidString,
                     email: user.email,
-                    expiresAt: expiryDate
+                    expiresAt: expiryDate,
+                    accessToken: session.accessToken
                 )
                 
                 // Sync authentication state with widget
@@ -192,7 +193,8 @@ class SupabaseManager: ObservableObject {
                 SharedSupabaseManager.storeSessionData(
                     userId: user.id.uuidString,
                     email: user.email,
-                    expiresAt: expiryDate
+                    expiresAt: expiryDate,
+                    accessToken: session.accessToken
                 )
                 
                 // Also update SharedDataManager for backwards compatibility
@@ -221,7 +223,8 @@ class SupabaseManager: ObservableObject {
                     SharedSupabaseManager.storeSessionData(
                         userId: user.id.uuidString,
                         email: user.email,
-                        expiresAt: expiryDate
+                        expiresAt: expiryDate,
+                        accessToken: session.accessToken
                     )
                     
                     // Also update SharedDataManager for backwards compatibility

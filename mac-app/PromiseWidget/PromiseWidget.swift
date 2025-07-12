@@ -14,14 +14,47 @@ struct JSONPlaceholderPost: Codable {
 
 // MARK: - Widget Data Models
 struct WidgetPromise: Codable, Identifiable {
-    let id: String
+    let promiseId: Int64?
     let created_at: Date
     let updated_at: Date
     let content: String
-    let owner_id: String
-    let resolved: Bool
+    let owner_id: UUID
+    let resolved: Bool?
+    let extracted_from_screenshot: Bool?
+    let screenshot_id: String?
+    let screenshot_timestamp: String?
+    let resolved_screenshot_id: String?
+    let resolved_screenshot_time: String?
+    let resolved_reason: String?
+    let extraction_data: String?
+    let action: String?
+    let metadata: String?
     
-    var isResolved: Bool { resolved }
+    var isResolved: Bool { resolved ?? false }
+    
+    // Identifiable conformance
+    var id: String {
+        return String(promiseId ?? 0)
+    }
+    
+    // CodingKeys to map promiseId to "id" in JSON
+    enum CodingKeys: String, CodingKey {
+        case promiseId = "id"
+        case created_at
+        case updated_at
+        case content
+        case owner_id
+        case resolved
+        case extracted_from_screenshot
+        case screenshot_id
+        case screenshot_timestamp
+        case resolved_screenshot_id
+        case resolved_screenshot_time
+        case resolved_reason
+        case extraction_data
+        case action
+        case metadata
+    }
 }
 
 struct WidgetData: Codable {
@@ -52,6 +85,32 @@ struct WidgetConstants {
     static let appGroupIdentifier = "group.TX645N2QBW.com.example.mac.SidebarApp"
     static let dataFileName = "widget_data.json"
     static let changeNotificationName = "com.promisekeeper.widget.datachanged"
+}
+
+// MARK: - JWT Helper
+private func extractUserIdFromToken(_ token: String) -> String? {
+    let segments = token.split(separator: ".")
+    guard segments.count > 1 else { return nil }
+    
+    var base64String = String(segments[1])
+    // Pad the base64 string if needed
+    let remainder = base64String.count % 4
+    if remainder > 0 {
+        base64String += String(repeating: "=", count: 4 - remainder)
+    }
+    
+    guard let data = Data(base64Encoded: base64String) else { return nil }
+    
+    do {
+        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+           let sub = json["sub"] as? String {
+            return sub
+        }
+    } catch {
+        NSLog("❌ Failed to parse JWT payload: \(error)")
+    }
+    
+    return nil
 }
 
 // MARK: - Unified Data Manager (widget access)
@@ -86,18 +145,40 @@ class WidgetUnifiedDataManager {
     }
     
     private func loadFromRemoteURL() -> WidgetData? {
-        NSLog("🌐 Rahul: Attempting to load data from remote URL")
+        NSLog("🌐 Rahul: Attempting to load data from Supabase")
         
-        guard let url = URL(string: "https://raw.githubusercontent.com/anaygupta2004/hello-world/refs/heads/master/widget_data.json") else {
-            NSLog("❌ Rahul: Invalid remote URL")
+        // Get JWT token from keychain
+        guard let accessToken = SharedSupabaseManager.getAccessTokenForWidget() else {
+            NSLog("❌ Rahul: No access token found in keychain")
             return nil
         }
+        
+        // Extract user ID from JWT token
+        guard let userId = extractUserIdFromToken(accessToken) else {
+            NSLog("❌ Rahul: Could not extract user ID from token")
+            return nil
+        }
+        
+        // Configure Supabase URL with owner_id filter - using the 'promises' table
+        guard let url = URL(string: "https://msucqyacicicjkakvurq.supabase.co/rest/v1/promises?owner_id=eq.\(userId)&select=*") else {
+            NSLog("❌ Rahul: Invalid Supabase URL")
+            return nil
+        }
+        
+        NSLog("✅ Rahul: Fetching widget data for user: \(userId)")
         
         // Create a semaphore for synchronous network call (required for widget timeline)
         let semaphore = DispatchSemaphore(value: 0)
         var result: WidgetData?
         
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+        // Create request with authentication headers
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zdWNxeWFjaWNpY2prYWt2dXJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MjcyMDgsImV4cCI6MjA2NjEwMzIwOH0.dqV_-pUx8yJbyv2m1c-O5syFoKERKLEF0bDimtv0lro", forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpMethod = "GET"
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
             defer { semaphore.signal() }
             
             if let error = error {
@@ -105,25 +186,88 @@ class WidgetUnifiedDataManager {
                 return
             }
             
+            // Check HTTP response status
+            if let httpResponse = response as? HTTPURLResponse {
+                NSLog("📡 Rahul: HTTP Response Status Code: \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    NSLog("❌ Rahul: Non-200 status code: \(httpResponse.statusCode)")
+                    if let data = data, let errorString = String(data: data, encoding: .utf8) {
+                        NSLog("❌ Rahul: Error response: \(errorString)")
+                    }
+                    return
+                }
+            }
+            
             guard let data = data else {
-                NSLog("❌ Rahul: No data received from remote URL")
+                NSLog("❌ Rahul: No data received from Supabase")
                 return
             }
             
-            NSLog("✅ Rahul: Received \(data.count) bytes from remote URL")
+            NSLog("✅ Rahul: Received \(data.count) bytes from Supabase")
             
             do {
-                // Parse the widget data directly (same format as local file)
+                // Supabase returns an array of Promise records
                 let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
                 
-                let widgetData = try decoder.decode(WidgetData.self, from: data)
-                NSLog("✅ Rahul: Decoded WidgetData from remote URL - promises: \(widgetData.promises.count), auth: \(widgetData.isAuthenticated)")
+                // Custom date decoding strategy for Supabase timestamps
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = TimeZone(secondsFromGMT: 0)
+                
+                decoder.dateDecodingStrategy = .custom { decoder in
+                    let container = try decoder.singleValueContainer()
+                    let dateString = try container.decode(String.self)
+                    
+                    // Try different date formats that Supabase might use
+                    // Format 1: With milliseconds and timezone
+                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSX"
+                    if let date = formatter.date(from: dateString) {
+                        return date
+                    }
+                    
+                    // Format 2: With timezone but no milliseconds
+                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssX"
+                    if let date = formatter.date(from: dateString) {
+                        return date
+                    }
+                    
+                    // Format 3: No timezone (assumes UTC)
+                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+                    if let date = formatter.date(from: dateString) {
+                        return date
+                    }
+                    
+                    // Format 4: With fractional seconds but no timezone
+                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+                    if let date = formatter.date(from: dateString) {
+                        return date
+                    }
+                    
+                    throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(dateString)")
+                }
+                
+                // Decode the promises array from Supabase
+                let promises = try decoder.decode([WidgetPromise].self, from: data)
+                NSLog("✅ Rahul: Decoded \(promises.count) promises from Supabase")
+                
+                // Create WidgetData from the promises
+                let widgetData = WidgetData(
+                    promises: promises,
+                    userId: userId,
+                    userEmail: nil,
+                    isAuthenticated: true,
+                    lastUpdated: Date(),
+                    version: 1
+                )
                 
                 result = widgetData
                 
             } catch {
-                NSLog("❌ Rahul: Failed to decode remote data: \(error)")
+                NSLog("❌ Rahul: Failed to decode Supabase data: \(error)")
+                if let dataString = String(data: data, encoding: .utf8) {
+                    NSLog("❌ Rahul: Raw response data: \(dataString.prefix(500))...")
+                }
             }
         }
         
@@ -409,7 +553,7 @@ struct PromiseProvider: TimelineProvider {
         Task {
             NSLog("📱 Widget: Starting fetchRealData in getTimeline")
             let entry = await fetchRealData()
-            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: Date()) ?? Date()
+            let nextUpdate = Calendar.current.date(byAdding: .second, value: 1, to: Date()) ?? Date()
             let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
             NSLog("📱 Widget: timeline created with \(entry.promises.count) promises, next update at \(nextUpdate)")
             completion(timeline)
@@ -483,34 +627,41 @@ struct PromiseWidgetEntryView: View {
                 unauthenticatedView
             }
         }
-        .onAppear {
-            NSLog("📱 Rahul: Widget View appeared - auth: \(entry.isAuthenticated), promises: \(entry.promises.count)")
-            NSLog("📱 Rahul: Entry promises isEmpty: \(entry.promises.isEmpty)")
-            NSLog("📱 Rahul: PromisesToShow count: \(promisesToShow.count)")
-            
-            // Log which view path is taken
-            if entry.isAuthenticated && !entry.promises.isEmpty {
-                NSLog("📱 Rahul: Showing authenticatedView - promises: \(entry.promises.count)")
-            } else if entry.isAuthenticated {
-                NSLog("📱 Rahul: Showing 'no promises' view - authenticated but 0 promises")
-            } else {
-                NSLog("📱 Rahul: Showing unauthenticatedView - not authenticated")
-            }
-            
-            // Log each promise for debugging
-            for (index, promise) in entry.promises.enumerated() {
-                NSLog("📱 Rahul: Promise \(index + 1): '\(promise.content)' - resolved: \(promise.resolved)")
-            }
-            
-            // Log promisesToShow details
-            for (index, promise) in promisesToShow.enumerated() {
-                NSLog("📱 Rahul: PromisesToShow \(index + 1): '\(promise.content)' - resolved: \(promise.isResolved)")
-            }
-        }
     }
     
     private var authenticatedView: some View {
-        VStack(spacing: family == .systemMedium ? 8 : 12) {
+        VStack(spacing: family == .systemMedium ? 6 : 10) {
+            // Logo and Brand Section
+            HStack(spacing: 8) {
+                // Logo icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 59/255, green: 130/255, blue: 246/255, opacity: 0.2),
+                                    Color(red: 147/255, green: 51/255, blue: 234/255, opacity: 0.2)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 24, height: 24)
+                    
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(red: 59/255, green: 130/255, blue: 246/255, opacity: 0.8))
+                }
+                
+                Text("PromiseKeeper")
+                    .font(.system(size: family == .systemMedium ? 18 : 20, weight: .light))
+                    .foregroundColor(Color(red: 15/255, green: 23/255, blue: 42/255, opacity: 0.9))
+                    .kerning(-0.02)
+                
+                Spacer()
+            }
+            .padding(.bottom, family == .systemMedium ? 2 : 4)
+            
             // Header Section (Optimized for widget)
             headerSection
             
@@ -520,7 +671,9 @@ struct PromiseWidgetEntryView: View {
             // Promises List (Optimized for widget)
             promisesListSection
         }
-        .padding(family == .systemMedium ? 12 : 16)
+        .padding(.horizontal, family == .systemMedium ? 4 : 6)
+        .padding(.bottom, family == .systemMedium ? 4 : 6)
+        .padding(.top, family == .systemMedium ? 2 : 0)
         .containerBackground(
             LinearGradient(
                 gradient: Gradient(colors: [
@@ -543,9 +696,7 @@ struct PromiseWidgetEntryView: View {
                 .font(.headline)
                 .foregroundStyle(.primary)
             
-            Button("Open App") {
-                // This will open the main app
-            }
+            Link("Open App", destination: URL(string: "sidebarapp://open")!)
             .buttonStyle(.borderedProminent)
         }
         .padding()
@@ -555,14 +706,14 @@ struct PromiseWidgetEntryView: View {
     // MARK: - Header Section (Widget Optimized)
     private var headerSection: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(userGreeting)
-                    .font(.system(size: family == .systemMedium ? 16 : 20, weight: .medium))
+                    .font(.system(size: family == .systemMedium ? 14 : 16, weight: .medium))
                     .foregroundColor(Color(red: 17/255, green: 24/255, blue: 39/255, opacity: 0.9))
                     .lineLimit(1)
                 
                 Text("\(completionPercentage)% completed • \(totalPromises) total")
-                    .font(.system(size: family == .systemMedium ? 11 : 13, weight: .regular))
+                    .font(.system(size: family == .systemMedium ? 10 : 11, weight: .regular))
                     .foregroundColor(Color(red: 0/255, green: 0/255, blue: 0/255, opacity: 0.6))
                     .lineLimit(1)
             }
@@ -573,7 +724,7 @@ struct PromiseWidgetEntryView: View {
                 // Add Promise Button (Large widget only)
                 Button(intent: AddPromiseIntent()) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 20))
                         .foregroundColor(.blue)
                 }
                 .buttonStyle(.plain)
@@ -583,29 +734,44 @@ struct PromiseWidgetEntryView: View {
     
     // MARK: - Statistics Section (Widget Optimized)
     private var statisticsSection: some View {
-        HStack(spacing: family == .systemMedium ? 8 : 12) {
+        HStack(spacing: family == .systemMedium ? 8 : 10) {
+            // Total Promises (Orange)
             PromiseStatCard(
-                icon: "checkmark.circle.fill",
-                iconColor: .green,
+                value: "\(totalPromises)",
+                label: "Total",
+                gradientColors: [
+                    Color(red: 249/255, green: 115/255, blue: 22/255, opacity: 0.4),
+                    Color(red: 254/255, green: 215/255, blue: 170/255, opacity: 0.25)
+                ],
+                borderColor: Color(red: 249/255, green: 115/255, blue: 22/255, opacity: 0.25),
+                backgroundColor: Color(red: 249/255, green: 115/255, blue: 22/255, opacity: 0.08),
+                compact: family == .systemMedium
+            )
+            
+            // Completed (Green)
+            PromiseStatCard(
                 value: "\(completedPromises)",
                 label: "Completed",
+                gradientColors: [
+                    Color(red: 34/255, green: 197/255, blue: 94/255, opacity: 0.4),
+                    Color(red: 134/255, green: 239/255, blue: 172/255, opacity: 0.25)
+                ],
+                borderColor: Color(red: 34/255, green: 197/255, blue: 94/255, opacity: 0.25),
+                backgroundColor: Color(red: 34/255, green: 197/255, blue: 94/255, opacity: 0.08),
                 compact: family == .systemMedium
             )
             
-            PromiseStatCard(
-                icon: "clock.fill",
-                iconColor: .orange,
-                value: "\(pendingPromises)",
-                label: "Pending",
-                compact: family == .systemMedium
-            )
-            
+            // Pending (Red) - only show on large widget
             if family == .systemLarge {
                 PromiseStatCard(
-                    icon: "chart.line.uptrend.xyaxis",
-                    iconColor: .blue,
-                    value: "\(completionPercentage)%",
-                    label: "Progress",
+                    value: "\(pendingPromises)",
+                    label: "Pending",
+                    gradientColors: [
+                        Color(red: 239/255, green: 68/255, blue: 68/255, opacity: 0.4),
+                        Color(red: 252/255, green: 165/255, blue: 165/255, opacity: 0.25)
+                    ],
+                    borderColor: Color(red: 239/255, green: 68/255, blue: 68/255, opacity: 0.25),
+                    backgroundColor: Color(red: 239/255, green: 68/255, blue: 68/255, opacity: 0.08),
                     compact: false
                 )
             }
@@ -617,7 +783,7 @@ struct PromiseWidgetEntryView: View {
         VStack(alignment: .leading, spacing: family == .systemMedium ? 6 : 8) {
             HStack {
                 Text("All Promises")
-                    .font(.system(size: family == .systemMedium ? 13 : 15, weight: .semibold))
+                    .font(.system(size: family == .systemMedium ? 13 : 15, weight: .medium))
                     .foregroundColor(Color(red: 17/255, green: 24/255, blue: 39/255, opacity: 0.9))
                 
                 Spacer()
@@ -635,24 +801,11 @@ struct PromiseWidgetEntryView: View {
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 20)
-                    .onAppear {
-                        NSLog("📱 Rahul: Showing 'No promises yet' - entry.promises.isEmpty: \(entry.promises.isEmpty)")
-                    }
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: family == .systemMedium ? 4 : 6) {
-                        ForEach(promisesToShow) { promise in
-                            WidgetPromiseRow(promise: promise, compact: family == .systemMedium)
-                                .transition(.opacity)
-                                .onAppear {
-                                    NSLog("📱 Rahul: Rendering promise row: '\(promise.content)'")
-                                }
-                        }
+                VStack(alignment: .leading, spacing: family == .systemMedium ? 4 : 6) {
+                    ForEach(promisesToShow.prefix(maxPromises)) { promise in
+                        WidgetPromiseRow(promise: promise, compact: family == .systemMedium)
                     }
-                }
-                .frame(maxHeight: family == .systemMedium ? 120 : 200)
-                .onAppear {
-                    NSLog("📱 Rahul: Showing promises list - promisesToShow.count: \(promisesToShow.count)")
                 }
             }
         }
@@ -697,35 +850,50 @@ struct PromiseWidgetEntryView: View {
 
 // MARK: - Stat Card Component
 struct PromiseStatCard: View {
-    let icon: String
-    let iconColor: Color
     let value: String
     let label: String
+    let gradientColors: [Color]
+    let borderColor: Color
+    let backgroundColor: Color
     let compact: Bool
     
     var body: some View {
         VStack(spacing: compact ? 4 : 6) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: compact ? 14 : 16))
-                    .foregroundColor(iconColor)
-                
-                Text(value)
-                    .font(.system(size: compact ? 16 : 20, weight: .semibold))
-                    .foregroundColor(Color(red: 17/255, green: 24/255, blue: 39/255))
-            }
+            Text(value)
+                .font(.system(size: compact ? 16 : 20, weight: .semibold))
+                .foregroundColor(Color(red: 17/255, green: 24/255, blue: 39/255, opacity: 0.9))
+                .kerning(-0.02)
             
-            Text(label)
-                .font(.system(size: compact ? 10 : 12, weight: .regular))
-                .foregroundColor(Color(red: 107/255, green: 114/255, blue: 128/255))
+            Text(label.uppercased())
+                .font(.system(size: compact ? 9 : 10, weight: .medium))
+                .foregroundColor(Color(red: 17/255, green: 24/255, blue: 39/255, opacity: 0.9))
+                .kerning(0.08)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, compact ? 8 : 10)
+        .padding(.horizontal, compact ? 8 : 12)
+        .padding(.vertical, compact ? 4 : 6)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.white.opacity(0.8))
-                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+            ZStack {
+                // Base background
+                RoundedRectangle(cornerRadius: compact ? 8 : 12)
+                    .fill(backgroundColor)
+                
+                // Gradient overlay
+                RoundedRectangle(cornerRadius: compact ? 8 : 12)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: gradientColors),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ).opacity(0.25)
+                    )
+            }
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: compact ? 8 : 12)
+                .strokeBorder(borderColor, lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -735,7 +903,7 @@ struct WidgetPromiseRow: View {
     let compact: Bool
     
     var body: some View {
-        Button(intent: TogglePromiseIntent(promiseId: promise.id)) {
+        Button(intent: TogglePromiseIntent(promiseId: String(promise.promiseId ?? 0))) {
             HStack(spacing: compact ? 8 : 10) {
                 Image(systemName: promise.isResolved ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: compact ? 16 : 18))
@@ -743,7 +911,7 @@ struct WidgetPromiseRow: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(promise.content)
-                        .font(.system(size: compact ? 12 : 14, weight: .regular))
+                        .font(.system(size: compact ? 12 : 14, weight: .medium))
                         .foregroundColor(promise.isResolved 
                             ? Color(red: 156/255, green: 163/255, blue: 175/255)
                             : Color(red: 17/255, green: 24/255, blue: 39/255))
@@ -811,7 +979,7 @@ struct PromiseWidget: Widget {
 
 // MARK: - Sample Data (fallback)
 let samplePromises = [
-    PromiseData(id: "1", created_at: Date(), updated_at: Date(), content: "Complete project proposal", owner_id: "sample-user-id", resolved: false),
-    PromiseData(id: "2", created_at: Date().addingTimeInterval(-3600), updated_at: Date().addingTimeInterval(-3600), content: "Call mom this weekend", owner_id: "sample-user-id", resolved: true),
-    PromiseData(id: "3", created_at: Date().addingTimeInterval(-7200), updated_at: Date().addingTimeInterval(-7200), content: "Finish reading book", owner_id: "sample-user-id", resolved: false)
+    PromiseData(promiseId: 1, created_at: Date(), updated_at: Date(), content: "Complete project proposal", owner_id: UUID(), resolved: false, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil),
+    PromiseData(promiseId: 2, created_at: Date().addingTimeInterval(-3600), updated_at: Date().addingTimeInterval(-3600), content: "Call mom this weekend", owner_id: UUID(), resolved: true, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil),
+    PromiseData(promiseId: 3, created_at: Date().addingTimeInterval(-7200), updated_at: Date().addingTimeInterval(-7200), content: "Finish reading book", owner_id: UUID(), resolved: false, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil)
 ]
