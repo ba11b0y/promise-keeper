@@ -54,12 +54,21 @@ class AutoPromiseManager: ObservableObject {
         lastProcessedTime = Date()
         
         do {
-            // Convert screenshot to base64 PNG data format expected by BAML API
-            let base64ImageData = "data:image/png;base64,\(screenshot.base64Data)"
+            // Convert base64 back to Data for multipart form upload
+            NSLog("📸 Processing screenshot: %@", screenshot.id)
+            NSLog("📸 Original base64 data length: %d characters", screenshot.base64Data.count)
             
-            // Extract promises using BAML API
-            let response = try await bamlClient.extractPromisesFromBase64(
-                imageData: base64ImageData,
+            guard let imageData = Data(base64Encoded: screenshot.base64Data) else {
+                NSLog("❌ Failed to convert base64 to image data")
+                throw NSError(domain: "ScreenshotProcessing", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert base64 to image data"])
+            }
+            
+            NSLog("✅ Successfully converted base64 to Data: %d bytes", imageData.count)
+            
+            // Extract promises using BAML API (multipart form data)
+            NSLog("🚀 Calling BAML API with image data...")
+            let response = try await bamlClient.extractPromisesFromImageData(
+                imageData,
                 screenshotId: screenshot.id,
                 screenshotTimestamp: ISO8601DateFormatter().string(from: screenshot.timestamp)
             )
@@ -77,10 +86,10 @@ class AutoPromiseManager: ObservableObject {
                         
                         if promiseManager.errorMessage == nil {
                             createdPromises.append(detectedPromise)
-                            print("✅ Auto-created promise: \(detectedPromise.content)")
+                            NSLog("✅ Auto-created promise: %@", detectedPromise.content)
                         }
                     } catch {
-                        print("❌ Failed to create promise: \(error)")
+                        NSLog("❌ Failed to create promise: %@", error.localizedDescription)
                     }
                 }
                 
@@ -102,19 +111,35 @@ class AutoPromiseManager: ObservableObject {
                 // Show notification for resolved promises
                 await showPromiseResolvedNotification(count: resolvedPromises.count)
                 
-                print("✅ Found \(resolvedPromises.count) resolved promise(s)")
+                NSLog("✅ Found %d resolved promise(s)", resolvedPromises.count)
             }
             
             if response.promises.isEmpty && (response.resolved_promises?.isEmpty ?? true) {
                 processingStatus = "No promises detected in screenshot"
-                print("ℹ️ No promises found in screenshot: \(screenshot.id)")
+                NSLog("ℹ️ No promises found in screenshot: %@", screenshot.id)
             } else {
                 processingStatus = "Processing complete"
             }
             
         } catch {
             processingStatus = "Error processing screenshot: \(error.localizedDescription)"
-            print("❌ Error processing screenshot: \(error)")
+            NSLog("❌ Error processing screenshot: %@", error.localizedDescription)
+            NSLog("❌ Error type: %@", String(describing: type(of: error)))
+            
+            // Check if it's a BAML API error and log details
+            if let bamlError = error as? BAMLError {
+                NSLog("❌ BAML Error details: %@", bamlError.errorDescription ?? "Unknown BAML error")
+                switch bamlError {
+                case .httpError(let code):
+                    NSLog("❌ HTTP Error Code: %d", code)
+                case .decodingError(let decodeError):
+                    NSLog("❌ Decoding Error: %@", decodeError.localizedDescription)
+                case .invalidResponse:
+                    NSLog("❌ Invalid Response")
+                case .authenticationRequired:
+                    NSLog("❌ Authentication Required")
+                }
+            }
         }
         
         isProcessing = false

@@ -13,7 +13,7 @@ class BAMLAPIClient: ObservableObject {
     private init() {
         // Use the same API base URL as the Electron app
         self.baseURL = ProcessInfo.processInfo.environment["API_BASE_URL_OVERRIDE"] ?? 
-                      "https://promise-keeper-api-red-sunset-2072.fly.dev"
+                      "https://promise-keeper-api-summer-water-1765.fly.dev"
     }
     
     // MARK: - Promise Extraction
@@ -52,7 +52,7 @@ class BAMLAPIClient: ObservableObject {
             let result = try decoder.decode(PromiseListResponse.self, from: data)
             return result
         } catch {
-            print("❌ BAML API decode error: \(error)")
+            NSLog("❌ BAML API decode error: %@", error.localizedDescription)
             throw BAMLError.decodingError(error)
         }
     }
@@ -68,8 +68,13 @@ class BAMLAPIClient: ObservableObject {
         request.httpMethod = "POST"
         
         // Add authorization header if user is authenticated
-        if let token = await getAuthToken() {
+        let token = await getAuthToken()
+        print("🔑 Auth token available: \(token != nil ? "YES" : "NO")")
+        if let token = token {
+            print("🔑 Token prefix: \(String(token.prefix(20)))...")
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } else {
+            print("❌ No auth token available - this will likely fail")
         }
         
         // Create multipart form data
@@ -105,22 +110,46 @@ class BAMLAPIClient: ObservableObject {
         
         request.httpBody = body
         
+        print("📤 Sending request to: \(url)")
+        print("📤 Image data size: \(imageData.count) bytes")
+        print("📤 Total body size: \(body.count) bytes")
+        print("📤 Screenshot ID: \(screenshotId ?? "nil")")
+        print("📤 Screenshot timestamp: \(screenshotTimestamp ?? "nil")")
+        
         let (data, response) = try await session.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ Invalid response type")
             throw BAMLError.invalidResponse
         }
         
-        guard httpResponse.statusCode == 200 else {
+        print("📥 Response status: \(httpResponse.statusCode)")
+        print("📥 Response headers: \(httpResponse.allHeaderFields)")
+        
+        if httpResponse.statusCode != 200 {
+            // Try to decode error details
+            if let errorString = String(data: data, encoding: .utf8) {
+                NSLog("❌ Error response body: %@", errorString)
+                // Try to parse FastAPI error response
+                if let errorData = errorString.data(using: .utf8),
+                   let errorJson = try? JSONSerialization.jsonObject(with: errorData) as? [String: Any],
+                   let detail = errorJson["detail"] as? String {
+                    NSLog("❌ FastAPI error detail: %@", detail)
+                }
+            }
             throw BAMLError.httpError(httpResponse.statusCode)
         }
         
         do {
             let decoder = JSONDecoder()
             let result = try decoder.decode(PromiseListResponse.self, from: data)
+            print("✅ Successfully decoded response with \(result.promises.count) promises")
             return result
         } catch {
             print("❌ BAML API decode error: \(error)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("❌ Response body: \(responseString)")
+            }
             throw BAMLError.decodingError(error)
         }
     }
@@ -129,10 +158,25 @@ class BAMLAPIClient: ObservableObject {
     private func getAuthToken() async -> String? {
         // Get token from Supabase session
         do {
+            print("🔍 Attempting to get Supabase session...")
             let session = try await SupabaseManager.shared.client.auth.session
+            print("✅ Got Supabase session, user ID: \(session.user.id)")
+            print("🔑 Access token length: \(session.accessToken.count) characters")
+            // Additional debug: check token format
+            if session.accessToken.count < 50 {
+                print("⚠️ Warning: Access token seems unusually short")
+            }
             return session.accessToken
         } catch {
             print("❌ Failed to get auth token: \(error)")
+            print("❌ Error type: \(type(of: error))")
+            print("❌ Error description: \(error.localizedDescription)")
+            // Additional debug: check if user is logged in
+            if let currentUser = SupabaseManager.shared.client.auth.currentUser {
+                print("ℹ️ Current user exists but session failed: \(currentUser.id)")
+            } else {
+                print("ℹ️ No current user found")
+            }
             return nil
         }
     }

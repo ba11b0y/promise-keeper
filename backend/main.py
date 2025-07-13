@@ -296,46 +296,53 @@ async def extract_promises_from_file_authenticated(
 
         promises.promises = final_promises
         
+        # Initialize existing_promises_baml outside the if block
+        existing_promises_baml = []
+        
+        # Always fetch existing promises for this user (for both new promise checking and resolved promise checking)
+        try:
+            existing_promises_response = admin_client.table("promises").select("*").eq("owner_id", user_id).execute()
+            existing_promises_raw = existing_promises_response.data or []
+
+            print('existing_promises_raw', existing_promises_raw)
+            
+            # Convert existing promises to BAML Promise format
+            from baml_client.types import Promise as BAMLPromise
+            for existing in existing_promises_raw:
+                # Parse extraction_data to get original promise details
+                extraction_data = json.loads(existing.get("extraction_data", "{}"))
+                
+                # Parse action column (JSON string/object) into BAML Action
+                action_raw = existing.get("action")
+                baml_action_obj = None
+                if action_raw:
+                    try:
+                        if isinstance(action_raw, str):
+                            action_dict = json.loads(action_raw)
+                        else:
+                            action_dict = action_raw
+                        from baml_client.types import Action as BAMLAction
+                        baml_action_obj = BAMLAction(**action_dict)
+                    except Exception:
+                        baml_action_obj = None
+                
+                existing_promises_baml.append(BAMLPromise(
+                    content=existing["content"],
+                    reasoning=None,  # Don't need reasoning for existing promises
+                    to_whom=extraction_data.get("to_whom"),
+                    deadline=extraction_data.get("deadline"),
+                    action=baml_action_obj,
+                    how_sure=True
+                ))
+        except Exception as db_error:
+            logger.error(f"Error fetching existing promises: {db_error}")
+            # Continue with empty list if database fetch fails
+            existing_promises_baml = []
+        
         # If we found promises, check against existing ones in the database
         new_promises_to_save = []
         if promises.promises:
             try:
-                # Fetch all existing promises for this user
-                existing_promises_response = admin_client.table("promises").select("*").eq("owner_id", user_id).execute()
-                existing_promises_raw = existing_promises_response.data or []
-
-                print('existing_promises_raw', existing_promises_raw)
-                
-                # Convert existing promises to BAML Promise format
-                from baml_client.types import Promise as BAMLPromise
-                existing_promises_baml = []
-                for existing in existing_promises_raw:
-                    # Parse extraction_data to get original promise details
-                    extraction_data = json.loads(existing.get("extraction_data", "{}"))
-                    
-                    # Parse action column (JSON string/object) into BAML Action
-                    action_raw = existing.get("action")
-                    baml_action_obj = None
-                    if action_raw:
-                        try:
-                            if isinstance(action_raw, str):
-                                action_dict = json.loads(action_raw)
-                            else:
-                                action_dict = action_raw
-                            from baml_client.types import Action as BAMLAction
-                            baml_action_obj = BAMLAction(**action_dict)
-                        except Exception:
-                            baml_action_obj = None
-                    
-                    existing_promises_baml.append(BAMLPromise(
-                        content=existing["content"],
-                        reasoning=None,  # Don't need reasoning for existing promises
-                        to_whom=extraction_data.get("to_whom"),
-                        deadline=extraction_data.get("deadline"),
-                        action=baml_action_obj,
-                        how_sure=True
-                    ))
-                
                 # Use BAML to evaluate each promise individually
                 logger.info(f"Auth endpoint - User {user_id} - Checking {len(promises.promises)} new promises against {len(existing_promises_baml)} existing promises")
                 

@@ -16,7 +16,7 @@ console.log('Supabase client initialized:', {
 // API Configuration
 const API_CONFIG = {
     // Base URLs
-    baseUrl: window.electronAPI?.env?.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-red-sunset-2072.fly.dev",
+    baseUrl: window.electronAPI?.env?.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-summer-water-1765.fly.dev",
     
     // API Endpoints
     endpoints: {

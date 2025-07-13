@@ -27,7 +27,7 @@ class PromiseKeeperApp {
   private lastGlobalEnterTime: number = 0;
   private globalEnterCooldown: number = 60000; // 1 minute cooldown for global enter
   private globalKeyListener: boolean = false;
-  private apiBaseUrl = process.env.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-red-sunset-2072.fly.dev";
+  private apiBaseUrl = process.env.API_BASE_URL_OVERRIDE || "https://promise-keeper-api-summer-water-1765.fly.dev";
   private notificationManager: NotificationManager;
 
   constructor() {
