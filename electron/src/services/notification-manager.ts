@@ -64,12 +64,23 @@ export class NotificationManager {
 
         console.log('[NotificationManager] Setting last notification:', this.lastNotification);
 
-        this.activeNotification = new Notification({
+        // On macOS the system automatically uses the application icon for
+        // notifications and ignores any custom `icon` we pass. Supplying our
+        // own 16×16 tray bitmap here causes the OS to fall back to a generic
+        // placeholder. For Windows/Linux we still want to explicitly set the
+        // icon, so we only add it on non-mac platforms.
+
+        const notificationOptions: Electron.NotificationConstructorOptions = {
             title,
             body,
             silent: false,
-            icon: createTrayIcon()
-        });
+        };
+
+        if (process.platform !== 'darwin') {
+            notificationOptions.icon = createTrayIcon();
+        }
+
+        this.activeNotification = new Notification(notificationOptions);
 
         if (onClickCallback) {
             this.activeNotification.on('click', onClickCallback);

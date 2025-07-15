@@ -4,6 +4,33 @@ import AppIntents
 import Foundation
 import os.log
 
+// MARK: - Color Extension for Hex Support
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
 // MARK: - Remote Data Models
 struct JSONPlaceholderPost: Codable {
     let id: Int
@@ -29,6 +56,9 @@ struct WidgetPromise: Codable, Identifiable {
     let extraction_data: String?
     let action: String?
     let metadata: String?
+    let due_date: String?
+    let person: String?
+    let platform: String?
     
     var isResolved: Bool { resolved ?? false }
     
@@ -54,6 +84,9 @@ struct WidgetPromise: Codable, Identifiable {
         case extraction_data
         case action
         case metadata
+        case due_date
+        case person
+        case platform
     }
 }
 
@@ -82,7 +115,7 @@ struct WidgetData: Codable {
 
 // MARK: - Widget Configuration Constants
 struct WidgetConstants {
-    static let appGroupIdentifier = "group.TX645N2QBW.com.example.mac.SidebarApp"
+    static let appGroupIdentifier = "group.TX645N2QBW.com.example.mac.PromiseKeeper"
     static let dataFileName = "widget_data.json"
     static let changeNotificationName = "com.promisekeeper.widget.datachanged"
 }
@@ -149,7 +182,9 @@ class WidgetUnifiedDataManager {
         
         // Get JWT token from keychain
         guard let accessToken = SharedSupabaseManager.getAccessTokenForWidget() else {
-            NSLog("❌ Rahul: No access token found in keychain")
+            NSLog("❌ Rahul: No valid access token found (expired or missing)")
+            // Don't try to make network calls with expired token
+            // Fall back to local data instead
             return nil
         }
         
@@ -193,6 +228,12 @@ class WidgetUnifiedDataManager {
                     NSLog("❌ Rahul: Non-200 status code: \(httpResponse.statusCode)")
                     if let data = data, let errorString = String(data: data, encoding: .utf8) {
                         NSLog("❌ Rahul: Error response: \(errorString)")
+                        
+                        // If JWT expired (401), clear cached token and force re-authentication
+                        if httpResponse.statusCode == 401 && errorString.contains("JWT expired") {
+                            NSLog("🔄 Rahul: JWT expired, need fresh token from main app")
+                            // Widget can't refresh tokens, user needs to open main app
+                        }
                     }
                     return
                 }
@@ -919,9 +960,47 @@ struct WidgetPromiseRow: View {
                         .strikethrough(promise.isResolved)
                     
                     if !compact {
-                        Text(promise.created_at, style: .relative)
-                            .font(.system(size: 11))
-                            .foregroundColor(Color(red: 156/255, green: 163/255, blue: 175/255))
+                        // Show metadata row with person, platform, due date
+                        HStack(spacing: 6) {
+                            // Platform icon
+                            if let platform = promise.platform {
+                                Image(systemName: platformIconName(for: platform))
+                                    .font(.system(size: 9))
+                                    .foregroundColor(Color(hex: platformColor(for: platform)))
+                            }
+                            
+                            // Person
+                            if let person = promise.person {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 9))
+                                    Text(person)
+                                        .font(.system(size: 10))
+                                }
+                                .foregroundColor(Color(red: 156/255, green: 163/255, blue: 175/255))
+                            }
+                            
+                            // Due date
+                            if let dueDate = promise.due_date,
+                               let formattedDue = formatDueDate(dueDate) {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "calendar")
+                                        .font(.system(size: 9))
+                                    Text(formattedDue)
+                                        .font(.system(size: 10))
+                                }
+                                .foregroundColor(isOverdue(dueDate) 
+                                    ? Color(red: 239/255, green: 68/255, blue: 68/255)
+                                    : Color(red: 156/255, green: 163/255, blue: 175/255))
+                            } else {
+                                // Show created date if no due date
+                                Text(promise.created_at, style: .relative)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color(red: 156/255, green: 163/255, blue: 175/255))
+                            }
+                            
+                            Spacer()
+                        }
                     }
                 }
                 
@@ -935,6 +1014,62 @@ struct WidgetPromiseRow: View {
             )
         }
         .buttonStyle(.plain)
+    }
+    
+    // Helper functions for platform icons and colors
+    private func platformIconName(for platform: String) -> String {
+        switch platform.lowercased() {
+        case "messages", "imessage":
+            return "message.fill"
+        case "discord":
+            return "gamecontroller.fill"
+        case "slack":
+            return "number.square.fill"
+        case "email", "mail":
+            return "envelope.fill"
+        case "whatsapp":
+            return "phone.circle.fill"
+        case "teams", "microsoft teams":
+            return "person.3.fill"
+        case "telegram":
+            return "paperplane.fill"
+        default:
+            return "bubble.left.and.bubble.right"
+        }
+    }
+    
+    private func platformColor(for platform: String) -> String {
+        switch platform.lowercased() {
+        case "messages", "imessage":
+            return "#34C759"
+        case "discord":
+            return "#5865F2"
+        case "slack":
+            return "#4A154B"
+        case "whatsapp":
+            return "#25D366"
+        case "teams", "microsoft teams":
+            return "#5059C9"
+        case "telegram":
+            return "#0088CC"
+        default:
+            return "#007AFF"
+        }
+    }
+    
+    private func formatDueDate(_ dueDateString: String) -> String? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dueDateString) else { return nil }
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
+    }
+    
+    private func isOverdue(_ dueDateString: String) -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let dueDate = formatter.date(from: dueDateString) else { return false }
+        return dueDate < Date()
     }
 }
 
@@ -979,7 +1114,7 @@ struct PromiseWidget: Widget {
 
 // MARK: - Sample Data (fallback)
 let samplePromises = [
-    PromiseData(promiseId: 1, created_at: Date(), updated_at: Date(), content: "Complete project proposal", owner_id: UUID(), resolved: false, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil),
-    PromiseData(promiseId: 2, created_at: Date().addingTimeInterval(-3600), updated_at: Date().addingTimeInterval(-3600), content: "Call mom this weekend", owner_id: UUID(), resolved: true, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil),
-    PromiseData(promiseId: 3, created_at: Date().addingTimeInterval(-7200), updated_at: Date().addingTimeInterval(-7200), content: "Finish reading book", owner_id: UUID(), resolved: false, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil)
+    PromiseData(promiseId: 1, created_at: Date(), updated_at: Date(), content: "Complete project proposal", owner_id: UUID(), resolved: false, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil, due_date: "2025-07-20", person: "Jane", platform: "Slack"),
+    PromiseData(promiseId: 2, created_at: Date().addingTimeInterval(-3600), updated_at: Date().addingTimeInterval(-3600), content: "Call mom this weekend", owner_id: UUID(), resolved: true, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil, due_date: nil, person: "Mom", platform: "Phone"),
+    PromiseData(promiseId: 3, created_at: Date().addingTimeInterval(-7200), updated_at: Date().addingTimeInterval(-7200), content: "Finish reading book", owner_id: UUID(), resolved: false, extracted_from_screenshot: false, screenshot_id: nil, screenshot_timestamp: nil, resolved_screenshot_id: nil, resolved_screenshot_time: nil, resolved_reason: nil, extraction_data: nil, action: nil, metadata: nil, due_date: "2025-07-18", person: nil, platform: nil)
 ]

@@ -2,7 +2,7 @@
 
 # Fix widget data file permissions
 
-APP_GROUP_PATH="$HOME/Library/Group Containers/group.TX645N2QBW.com.example.mac.SidebarApp"
+APP_GROUP_PATH="$HOME/Library/Group Containers/group.TX645N2QBW.com.example.mac.PromiseKeeper"
 WIDGET_DATA_DIR="$APP_GROUP_PATH/WidgetData"
 WIDGET_DATA_FILE="$WIDGET_DATA_DIR/widget_data.json"
 

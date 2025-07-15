@@ -9,7 +9,7 @@ killall "Notification Center" 2>/dev/null || true
 
 # Kill specific widget extensions (common patterns)
 killall "PromiseWidgetExtension" 2>/dev/null || true
-killall "SidebarApp" 2>/dev/null || true
+killall "PromiseKeeper" 2>/dev/null || true
 
 # Kill processes that might be holding onto widgets
 pkill -f "WidgetExtension" 2>/dev/null || true

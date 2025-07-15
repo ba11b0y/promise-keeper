@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <channel>
+      <title>Promise Keeper Changelog</title>
+      <link>https://anaygupta2004.github.io/src/appcast.xml</link>
+      <description>Most recent changes with links to updates.</description>
+      <language>en</language>
+      
+      <!-- Example update entry - replace with actual update -->
+      <item>
+         <title>Version 1.1.0</title>
+         <description><![CDATA[
+            <h2>What's New in Version 1.1.0</h2>
+            <ul>
+               <li>Added automatic update support with Sparkle</li>
+               <li>Improved performance and stability</li>
+               <li>Bug fixes and minor improvements</li>
+            </ul>
+         ]]></description>
+         <pubDate>Mon, 13 Jul 2025 12:00:00 +0000</pubDate>
+         <sparkle:version>1.1.0</sparkle:version>
+         <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+         <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+         <sparkle:criticalUpdate>false</sparkle:criticalUpdate>
+         <enclosure 
+            url="https://anaygupta2004.github.io/src/releases/PromiseKeeper-1.1.0.dmg"
+            length="50000000" 
+            type="application/octet-stream"
+            sparkle:edSignature="your-signature-here" 
+            sparkle:installationType="package" />
+      </item>
+      
+      <!-- Add more update entries as needed -->
+      
+   </channel>
+</rss>

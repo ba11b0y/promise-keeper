@@ -373,6 +373,10 @@ async def extract_promises_from_file_authenticated(
                 
                 logger.info(f"Auth endpoint - User {user_id} - Results: {len(new_promises_to_save)} to save, {len(possibly_save_promises)} possibly save, {len(definitely_not_save_promises)} not save")
                 
+                # Add POSSIBLY_SAVE promises to the save list (they represent updates/clarifications)
+                new_promises_to_save.extend(possibly_save_promises)
+                logger.info(f"Auth endpoint - User {user_id} - Total promises to save after including possibly_save: {len(new_promises_to_save)}")
+                
             except Exception as filter_error:
                 logger.error(f"Error filtering promises: {filter_error}")
                 # Fall back to saving all promises if filtering fails
@@ -397,9 +401,14 @@ async def extract_promises_from_file_authenticated(
                     "extraction_data": json.dumps({
                         "to_whom": promise.to_whom,
                         "deadline": promise.deadline,
+                        "platform": promise.platform,
                         "raw_promise": promise.content
                     }),
-                    "action": json.dumps(promise.action.model_dump()) if getattr(promise, 'action', None) else None
+                    "action": json.dumps(promise.action.model_dump()) if getattr(promise, 'action', None) else None,
+                    # Store as separate columns for easier querying
+                    "person": promise.to_whom if promise.to_whom else "myself",
+                    "due_date": promise.deadline,  # This will be stored as text, frontend can parse
+                    "platform": promise.platform
                 }
                 
                 print(f"Final promise_data being sent to Supabase: {json.dumps(promise_data, indent=2)}")
@@ -489,16 +498,45 @@ async def extract_promises_from_file_authenticated(
             except Exception as resolved_info_error:
                 logger.error(f"Error preparing resolved promises info: {resolved_info_error}")
         
-        return PromiseListResponse(
-            promises=[
-                {
+        # Format promises for notifications
+        formatted_promises = []
+        for p in new_promises_to_save:
+            try:
+                # Format the promise for notification using BAML
+                formatted = b.FormatPromiseForNotification(p)
+                formatted_promises.append({
                     "content": p.content,
                     "to_whom": p.to_whom,
                     "deadline": p.deadline,
-                    "action": p.action.model_dump() if getattr(p, 'action', None) else None
-                }
-                for p in new_promises_to_save
-            ],
+                    "platform": p.platform,
+                    "person": p.to_whom if p.to_whom else "myself",
+                    "due_date": p.deadline,
+                    "action": p.action.model_dump() if getattr(p, 'action', None) else None,
+                    "formatted": {
+                        "title": formatted.title,
+                        "body": formatted.body,
+                        "details": formatted.details
+                    }
+                })
+            except Exception as format_error:
+                # Fallback if formatting fails
+                formatted_promises.append({
+                    "content": p.content,
+                    "to_whom": p.to_whom,
+                    "deadline": p.deadline,
+                    "platform": p.platform,
+                    "person": p.to_whom if p.to_whom else "myself",
+                    "due_date": p.deadline,
+                    "action": p.action.model_dump() if getattr(p, 'action', None) else None,
+                    "formatted": {
+                        "title": p.content[:50],
+                        "body": p.content[:150],
+                        "details": f"To: {p.to_whom or 'myself'} • Due: {p.deadline or 'No deadline'} • Via: {p.platform or 'Unknown'}"
+                    }
+                })
+        
+        return PromiseListResponse(
+            promises=formatted_promises,
             resolved_promises=resolved_promises_info,
             resolved_count=resolved_promises_count
         )

@@ -6,7 +6,7 @@ import re
 import os
 
 def clean_pbxproj():
-    project_file = "/Users/anaygupta/Downloads/promise-keeper/mac-app/SidebarApp.xcodeproj/project.pbxproj"
+    project_file = "/Users/anaygupta/Downloads/promise-keeper/mac-app/PromiseKeeper.xcodeproj/project.pbxproj"
     
     # Read the project file
     with open(project_file, 'r') as f:

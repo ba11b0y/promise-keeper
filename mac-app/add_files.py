@@ -5,13 +5,13 @@ import re
 
 # List of new files to add to the Xcode project
 new_files = [
-    "SidebarApp/Managers/ScreenshotManager.swift",
-    "SidebarApp/Managers/AutoPromiseManager.swift", 
-    "SidebarApp/Managers/BAMLAPIClient.swift",
-    "SidebarApp/Managers/MCPClient.swift",
-    "SidebarApp/Views/CompactPromiseView.swift",
-    "SidebarApp/Views/ModernPromiseView.swift",
-    "SidebarApp/Utilities/StubManagers.swift"
+    "PromiseKeeper/Managers/ScreenshotManager.swift",
+    "PromiseKeeper/Managers/AutoPromiseManager.swift", 
+    "PromiseKeeper/Managers/BAMLAPIClient.swift",
+    "PromiseKeeper/Managers/MCPClient.swift",
+    "PromiseKeeper/Views/CompactPromiseView.swift",
+    "PromiseKeeper/Views/ModernPromiseView.swift",
+    "PromiseKeeper/Utilities/StubManagers.swift"
 ]
 
 def generate_id():
@@ -112,5 +112,5 @@ def add_files_to_project(project_path, files_to_add):
         print(f"  - {file_info['filename']}")
 
 if __name__ == "__main__":
-    project_file = "/Users/anaygupta/Downloads/promise-keeper/mac-app/SidebarApp.xcodeproj/project.pbxproj"
+    project_file = "/Users/anaygupta/Downloads/promise-keeper/mac-app/PromiseKeeper.xcodeproj/project.pbxproj"
     add_files_to_project(project_file, new_files)

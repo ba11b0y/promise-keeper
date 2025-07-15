@@ -50,7 +50,7 @@ log show --predicate 'subsystem == "com.apple.WidgetKit"' --last 30m 2>&1 | grep
 echo ""
 echo "4. CHECKING CRASH REPORTS:"
 echo "--------------------------"
-crash_reports=$(find ~/Library/Logs/DiagnosticReports -name "*PromiseWidget*" -o -name "*SidebarApp*" -mtime -1 2>/dev/null)
+crash_reports=$(find ~/Library/Logs/DiagnosticReports -name "*PromiseWidget*" -o -name "*PromiseKeeper*" -mtime -1 2>/dev/null)
 if [ -z "$crash_reports" ]; then
     echo "✅ No recent crash reports found"
 else
@@ -72,7 +72,7 @@ echo ""
 # 6. Check App Group access
 echo "6. CHECKING APP GROUP ACCESS:"
 echo "-----------------------------"
-app_group_path=~/Library/Group\ Containers/group.TX645N2QBW.com.example.mac.SidebarApp
+app_group_path=~/Library/Group\ Containers/group.TX645N2QBW.com.example.mac.PromiseKeeper
 if [ -d "$app_group_path" ]; then
     echo "✅ App Group container exists at: $app_group_path"
     echo "Contents:"
@@ -87,7 +87,7 @@ if [ -d "$app_group_path" ]; then
 else
     echo "❌ App Group container not found at expected path"
     echo "Searching for alternative locations:"
-    find ~/Library/Group\ Containers -name "*SidebarApp*" -type d 2>/dev/null
+    find ~/Library/Group\ Containers -name "*PromiseKeeper*" -type d 2>/dev/null
 fi
 echo ""
 
@@ -127,7 +127,7 @@ cat << 'EOF'
 Add this to your widget's PromiseProvider.getTimeline():
 
 let debugURL = FileManager.default
-    .containerURL(forSecurityApplicationGroupIdentifier: "group.TX645N2QBW.com.example.mac.SidebarApp")?
+    .containerURL(forSecurityApplicationGroupIdentifier: "group.TX645N2QBW.com.example.mac.PromiseKeeper")?
     .appendingPathComponent("widget_debug.log")
 
 if let debugURL = debugURL {

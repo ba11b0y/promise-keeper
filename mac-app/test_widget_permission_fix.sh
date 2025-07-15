@@ -11,14 +11,14 @@ else
 fi
 
 echo -e "\n📋 Checking Main App Entitlements:"
-if plutil -p SidebarApp/SidebarApp.entitlements | grep -q '$(TeamIdentifierPrefix)'; then
+if plutil -p PromiseKeeper/PromiseKeeper.entitlements | grep -q '$(TeamIdentifierPrefix)'; then
     echo "❌ Main app still has incorrect App Group entry"
 else
     echo "✅ Main app entitlements are correct"
 fi
 
 # Check App Group container
-APP_GROUP="group.TX645N2QBW.com.example.mac.SidebarApp"
+APP_GROUP="group.TX645N2QBW.com.example.mac.PromiseKeeper"
 CONTAINER_PATH="$HOME/Library/Group Containers/$APP_GROUP"
 
 echo -e "\n📂 Checking App Group Container:"

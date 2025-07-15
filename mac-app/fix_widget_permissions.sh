@@ -2,7 +2,7 @@
 
 echo "🔧 Fixing Widget Data Permissions..."
 
-APP_GROUP="group.TX645N2QBW.com.example.mac.SidebarApp"
+APP_GROUP="group.TX645N2QBW.com.example.mac.PromiseKeeper"
 CONTAINER_PATH="$HOME/Library/Group Containers/$APP_GROUP"
 WIDGET_DATA_DIR="$CONTAINER_PATH/WidgetData"
 WIDGET_DATA_FILE="$WIDGET_DATA_DIR/widget_data.json"

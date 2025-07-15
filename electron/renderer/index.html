@@ -218,9 +218,17 @@
         .promise-content {
             font-size: 15px;
             line-height: 1.5;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             word-wrap: break-word;
             color: rgba(0, 0, 0, 0.85);
+        }
+
+        .promise-metadata-simple {
+            font-size: 13px;
+            color: rgba(71, 85, 105, 0.8);
+            margin-bottom: 10px;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .promise-meta {
@@ -1163,6 +1171,73 @@
             gap: 8px;
         }
 
+        .add-promise-metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metadata-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 0.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 8px 12px;
+            transition: all 0.3s ease;
+        }
+
+        .metadata-input-group:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .metadata-input-group:focus-within {
+            border-color: rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.02);
+        }
+
+        .metadata-input-group svg {
+            width: 14px;
+            height: 14px;
+            color: rgba(100, 116, 139, 0.7);
+            flex-shrink: 0;
+        }
+
+        .metadata-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            color: rgba(17, 24, 39, 0.9);
+            font-family: inherit;
+            min-width: 0;
+        }
+
+        .metadata-input::placeholder {
+            color: rgba(156, 163, 175, 0.5);
+        }
+
+        .metadata-input[type="date"] {
+            cursor: pointer;
+        }
+
+        .metadata-input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .metadata-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
         /* Promises List */
         .promises-container {
             position: relative;
@@ -1380,6 +1455,99 @@
             width: 14px;
             height: 14px;
             stroke-width: 2;
+        }
+
+        /* Promise Metadata */
+        .promise-metadata {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+            margin-bottom: 6px;
+        }
+
+        .promise-metadata-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: rgba(71, 85, 105, 0.8);
+            background: rgba(0, 0, 0, 0.02);
+            padding: 4px 10px;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            border: 0.5px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .promise-metadata-item:hover {
+            background: rgba(0, 0, 0, 0.04);
+            color: rgba(30, 41, 59, 0.9);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .promise-metadata-item svg {
+            width: 12px;
+            height: 12px;
+            stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .promise-metadata-item span {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Specific metadata styling */
+        .promise-person {
+            color: rgba(59, 130, 246, 0.9);
+            background: rgba(59, 130, 246, 0.06);
+            border-color: rgba(59, 130, 246, 0.12);
+        }
+
+        .promise-person:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .promise-due-date {
+            color: rgba(251, 146, 60, 0.9);
+            background: rgba(251, 146, 60, 0.06);
+            border-color: rgba(251, 146, 60, 0.12);
+        }
+
+        .promise-due-date:hover {
+            background: rgba(251, 146, 60, 0.1);
+            border-color: rgba(251, 146, 60, 0.2);
+        }
+
+        .promise-due-date.overdue {
+            color: rgba(239, 68, 68, 0.9);
+            background: rgba(239, 68, 68, 0.06);
+            border-color: rgba(239, 68, 68, 0.12);
+            font-weight: 500;
+        }
+
+        .promise-due-date.overdue:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .promise-platform {
+            color: rgba(139, 92, 246, 0.9);
+            background: rgba(139, 92, 246, 0.06);
+            border-color: rgba(139, 92, 246, 0.12);
+        }
+
+        .promise-platform:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        /* Adjust promise text container for metadata */
+        .promise-resolved .promise-metadata-item {
+            opacity: 0.8;
         }
 
         /* Resolution Info */
@@ -1720,6 +1888,24 @@
             
             .stat-label {
                 font-size: 10px;
+            }
+            
+            .add-promise-metadata {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .promise-metadata {
+                gap: 8px;
+            }
+            
+            .promise-metadata-item {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+            
+            .promise-metadata-item span {
+                max-width: 100px;
             }
         }
         

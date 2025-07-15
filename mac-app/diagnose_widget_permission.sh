@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Group ID to check
-GROUP_ID="group.TX645N2QBW.com.example.mac.SidebarApp"
+GROUP_ID="group.TX645N2QBW.com.example.mac.PromiseKeeper"
 EXPECTED_TEAM_ID="TX645N2QBW"
 
 echo "Expected Group ID: $GROUP_ID"
@@ -35,8 +35,8 @@ if [ -z "$WIDGET_BUNDLE" ]; then
         "/Users/anaygupta/Downloads/promise-keeper/mac-app/build/Debug/PromiseWidgetExtension.appex"
         "/Users/anaygupta/Downloads/promise-keeper/mac-app/build/Build/Products/Debug/PromiseWidgetExtension.appex"
         "/Users/anaygupta/Downloads/promise-keeper/mac-app/build/Build/Products/Release/PromiseWidgetExtension.appex"
-        "/Users/anaygupta/Library/Developer/Xcode/DerivedData/SidebarApp-*/Build/Products/Debug/PromiseWidgetExtension.appex"
-        "/Users/anaygupta/Library/Developer/Xcode/DerivedData/SidebarApp-*/Build/Products/Release/PromiseWidgetExtension.appex"
+        "/Users/anaygupta/Library/Developer/Xcode/DerivedData/PromiseKeeper-*/Build/Products/Debug/PromiseWidgetExtension.appex"
+        "/Users/anaygupta/Library/Developer/Xcode/DerivedData/PromiseKeeper-*/Build/Products/Release/PromiseWidgetExtension.appex"
     )
     
     for path in "${POSSIBLE_PATHS[@]}"; do
@@ -141,7 +141,7 @@ echo
 
 # Step 5: Check main app bundle
 echo "Step 5: Checking main app bundle..."
-MAIN_APP=$(mdfind 'kMDItemCFBundleIdentifier == com.example.mac.SidebarApp' | head -1)
+MAIN_APP=$(mdfind 'kMDItemCFBundleIdentifier == com.example.mac.PromiseKeeper' | head -1)
 
 if [ -n "$MAIN_APP" ]; then
     echo "Main app found at: $MAIN_APP"
@@ -175,10 +175,10 @@ if [ -n "$ACTUAL_TEAM_ID" ] && [ "$ACTUAL_TEAM_ID" != "$EXPECTED_TEAM_ID" ]; the
     echo "To fix this issue, you have two options:"
     echo
     echo "Option 1: Change the App Group ID prefix to match your actual Team ID"
-    echo "   In both targets (SidebarApp & PromiseWidgetExtension):"
+    echo "   In both targets (PromiseKeeper & PromiseWidgetExtension):"
     echo "   1. Go to Signing & Capabilities → App Groups"
     echo "   2. Remove the current group"
-    echo "   3. Add new group: group.$ACTUAL_TEAM_ID.com.example.mac.SidebarApp"
+    echo "   3. Add new group: group.$ACTUAL_TEAM_ID.com.example.mac.PromiseKeeper"
     echo
     echo "Option 2: Change your signing team to match the Group ID prefix"
     echo "   In both targets:"

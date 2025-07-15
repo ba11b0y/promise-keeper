@@ -1,26 +1,26 @@
 #!/bin/bash
 
-# Build and Run Script for SidebarApp
+# Build and Run Script for PromiseKeeper
 # Usage: ./build_and_run.sh
 
 echo "🧹 Cleaning up running instances..."
-pkill -f SidebarApp 2>/dev/null || true
+pkill -f PromiseKeeper 2>/dev/null || true
 pkill -f PromiseWidget 2>/dev/null || true
 pkill -f Xcode 2>/dev/null || true
 
-echo "🔨 Building SidebarApp..."
-xcodebuild -project SidebarApp.xcodeproj -scheme SidebarApp -configuration Debug build
+echo "🔨 Building PromiseKeeper..."
+xcodebuild -project PromiseKeeper.xcodeproj -scheme PromiseKeeper -configuration Debug build
 
 if [ $? -eq 0 ]; then
     echo "✅ Build successful!"
     
     # Find the built app
-    APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/SidebarApp-*/Build/Products/Debug -name "SidebarApp.app" -type d | head -n 1)
+    APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/PromiseKeeper-*/Build/Products/Debug -name "PromiseKeeper.app" -type d | head -n 1)
     
     if [ -n "$APP_PATH" ]; then
-        echo "🚀 Launching SidebarApp..."
+        echo "🚀 Launching PromiseKeeper..."
         open "$APP_PATH"
-        echo "📱 SidebarApp is now running!"
+        echo "📱 PromiseKeeper is now running!"
     else
         echo "❌ Could not find built app"
         exit 1

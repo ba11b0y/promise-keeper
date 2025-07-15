@@ -50,5 +50,5 @@ def remove_supabase_dependencies(project_path):
     print("Removed Supabase dependencies from Xcode project")
 
 if __name__ == "__main__":
-    project_file = "/Users/anaygupta/Downloads/promise-keeper/mac-app/SidebarApp.xcodeproj/project.pbxproj"
+    project_file = "/Users/anaygupta/Downloads/promise-keeper/mac-app/PromiseKeeper.xcodeproj/project.pbxproj"
     remove_supabase_dependencies(project_file)

@@ -18,7 +18,7 @@ echo ""
 
 # Check AppGroupConfig.swift
 echo "AppGroupConfig.swift:"
-grep -n "identifier = " SidebarApp/Configuration/AppGroupConfig.swift | grep -v "//" || echo "${RED}Not found${NC}"
+grep -n "identifier = " PromiseKeeper/Configuration/AppGroupConfig.swift | grep -v "//" || echo "${RED}Not found${NC}"
 echo ""
 
 # Check PromiseWidget.swift
@@ -29,8 +29,8 @@ echo ""
 # Check entitlements
 echo "📋 Checking entitlements files:"
 echo ""
-echo "SidebarApp.entitlements:"
-grep -A 2 "application-groups" SidebarApp/SidebarApp.entitlements || echo "${RED}Not found${NC}"
+echo "PromiseKeeper.entitlements:"
+grep -A 2 "application-groups" PromiseKeeper/PromiseKeeper.entitlements || echo "${RED}Not found${NC}"
 echo ""
 echo "PromiseWidget.entitlements:"
 grep -A 2 "application-groups" PromiseWidget/PromiseWidget.entitlements || echo "${RED}Not found${NC}"
@@ -40,8 +40,8 @@ echo ""
 echo "📋 Checking for existing App Group data:"
 echo ""
 
-OLD_GROUP="group.TX645N2QBW.com.example.mac.SidebarApp"
-NEW_GROUP="group.com.example.mac.SidebarApp"
+OLD_GROUP="group.TX645N2QBW.com.example.mac.PromiseKeeper"
+NEW_GROUP="group.com.example.mac.PromiseKeeper"
 
 if defaults read $OLD_GROUP &>/dev/null; then
     echo "${YELLOW}⚠️  Found data in old App Group: $OLD_GROUP${NC}"
@@ -63,7 +63,7 @@ echo "📋 Checking Keychain Access:"
 echo ""
 
 # Check for Keychain items
-KEYCHAIN_GROUP="TX645N2QBW.com.example.mac.SidebarApp"
+KEYCHAIN_GROUP="TX645N2QBW.com.example.mac.PromiseKeeper"
 echo "Keychain Access Group: ${BLUE}$KEYCHAIN_GROUP${NC}"
 
 # Try to find the session in Keychain
@@ -87,7 +87,7 @@ echo "   - Remove old: $OLD_GROUP"
 echo "   - Add new: $NEW_GROUP"
 echo "   ${BLUE}Keychain Sharing:${NC}"
 echo "   - Add capability if missing"
-echo "   - Add group: com.example.mac.SidebarApp"
+echo "   - Add group: com.example.mac.PromiseKeeper"
 echo ""
 echo "✅ App Group should be: ${GREEN}$NEW_GROUP${NC}"
-echo "✅ Keychain Group should be: ${GREEN}com.example.mac.SidebarApp${NC}"
+echo "✅ Keychain Group should be: ${GREEN}com.example.mac.PromiseKeeper${NC}"

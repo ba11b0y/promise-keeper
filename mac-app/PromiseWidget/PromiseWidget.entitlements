@@ -6,7 +6,13 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.TX645N2QBW.com.example.mac.SidebarApp</string>
+		<string>group.TX645N2QBW.com.example.mac.PromiseKeeper</string>
+	</array>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.example.mac.PromiseKeeper</string>
 	</array>
 </dict>
 </plist>

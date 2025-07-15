@@ -59,6 +59,7 @@ export interface ExtractedPromise {
   content: string;
   to_whom?: string;
   deadline?: string;
+  platform?: string;
   potential_actions: EnhancedPotentialAction[];
 }
 
@@ -66,6 +67,7 @@ export interface ResolvedPromise {
   content: string;
   to_whom?: string;
   deadline?: string;
+  platform?: string;
   resolution_reasoning?: string;
   resolution_evidence?: string;
 }
@@ -98,6 +100,9 @@ export interface DatabasePromise {
   potential_actions?: string; // JSON string of EnhancedPotentialAction[]
   metadata?: string; // JSON string
   action?: string; // JSON string of Action
+  due_date?: string; // ISO date string
+  person?: string; // Who the promise was made to
+  platform?: string; // Where the promise was made (Messages, Discord, Slack, etc.)
 }
 
 // Parsed versions of database fields
@@ -105,7 +110,15 @@ export interface ParsedExtractionData {
   original_promise?: any;
   to_whom?: string;
   deadline?: string;
+  platform?: string;
   raw_promise?: string;
+}
+
+// Formatted promise for notifications
+export interface FormattedPromise {
+  title: string;
+  body: string;
+  details?: string;
 }
 
 export interface ParsedPromiseWithActions extends Omit<DatabasePromise, 'potential_actions' | 'extraction_data'> {

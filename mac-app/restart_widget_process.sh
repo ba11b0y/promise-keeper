@@ -30,7 +30,7 @@ fi
 # Touch the widget data file to force update
 echo ""
 echo "3️⃣ Touching widget data file..."
-WIDGET_DATA="/Users/$USER/Library/Group Containers/group.TX645N2QBW.com.example.mac.SidebarApp/WidgetData/widget_data.json"
+WIDGET_DATA="/Users/$USER/Library/Group Containers/group.TX645N2QBW.com.example.mac.PromiseKeeper/WidgetData/widget_data.json"
 
 if [ -f "$WIDGET_DATA" ]; then
     touch "$WIDGET_DATA"

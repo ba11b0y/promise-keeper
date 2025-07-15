@@ -13,6 +13,9 @@ class Promise {
   deadline string? @description(#"
     When the promise should be fulfilled (could be specific date or relative time)
   "#)
+  platform string? @description(#"
+    The platform/app where the promise was made (e.g., "Messages", "iMessage", "WhatsApp", "Discord", "Slack", "Email", "Gmail", "Outlook", "Teams", "Telegram", "Signal", "Facebook Messenger", "Instagram", "Twitter/X", "LinkedIn", "Zoom", "Google Meet", etc.)
+  "#)
   action Action? @description(#"
     You have the opportunity to pass this agent with an Apple MCP server to take actions on the user's behalf.
     If you think this is the case, you can pass the agent with the action you want to take, and the parameters you would need to pass to the agent to take that action.
@@ -120,6 +123,12 @@ function ExtractPromises(userImage: image) -> PromiseListResponse| NoPromisesFou
     Do not consider duplicate texts as two different promises, even if they are repeated in the screenshot.
     Also, make sure that you check the last of the messages in the screenshot to get the latest promises made by the user, but don't expect it to be a promise all the time.
     It could be a message that the user is reading or replying to, but not necessarily a promise. Always check the intent.
+
+    PLATFORM DETECTION:
+    - Look for visual cues in the screenshot to identify the platform/app being used
+    - Common indicators: app name in title bar, distinctive UI elements, logos, color schemes
+    - Examples: Messages (blue/green bubbles), Discord (dark theme with channels), Slack (workspace sidebar), Gmail (compose window), etc.
+    - If you can't determine the specific platform, use generic terms like "Email", "Chat", "Messaging App"
 
     If you see normal browsing, working, or any content without clear interpersonal commitments, return NoPromisesFoundResponse.
 
@@ -271,6 +280,61 @@ function CheckResolvedPromises(userImage: image, existingPromises: Promise[]) ->
     If no promises appear to be resolved in this screenshot, return NoPromisesResolvedResponse.
 
     Analyze the image: {{ userImage }}
+
+    {{ ctx.output_format }}
+  "#
+}
+
+class FormattedPromise {
+  title string @description(#"
+    A concise, clear title for the notification (max 50 chars)
+  "#)
+  body string @description(#"
+    The formatted promise content suitable for a notification (max 150 chars)
+  "#)
+  details string? @description(#"
+    Additional context if needed (who, when, where)
+  "#)
+}
+
+function FormatPromiseForNotification(promise: Promise) -> FormattedPromise {
+  client LlamaAPI
+  prompt #"
+    You are a notification formatter that creates clear, concise notifications from promises.
+
+    TASK: Transform the raw promise into a user-friendly notification format.
+
+    PROMISE TO FORMAT:
+    {{ promise }}
+
+    FORMATTING GUIDELINES:
+    1. **Title**: Create a short, action-oriented title (max 50 characters)
+       - Start with a verb when possible
+       - Include the most important element (what/who)
+       - Examples: "Send report to John", "Call mom", "Review Sarah's document"
+
+    2. **Body**: Rewrite the promise content to be clear and concise (max 150 characters)
+       - Remove redundant words
+       - Keep the core commitment
+       - Include deadline if present
+       - Examples: "Promised to send the Q4 financial report by Friday 5pm"
+
+    3. **Details**: Include relevant context (optional)
+       - Who: {{ promise.to_whom }}
+       - When: {{ promise.deadline }}
+       - Where: {{ promise.platform }}
+       - Format as: "To: [person] • Due: [date] • Via: [platform]"
+
+    EXAMPLES:
+    - Raw: "Yeah sure, I'll definitely send you that report we discussed by end of week"
+      Title: "Send report to colleague"
+      Body: "Send the discussed report by end of week"
+      Details: "To: Colleague • Due: End of week"
+
+    - Raw: "I promise I'll call mom this Sunday afternoon around 3"
+      Title: "Call mom"
+      Body: "Call mom on Sunday afternoon around 3pm"
+      Details: "To: Mom • Due: Sunday 3pm"
 
     {{ ctx.output_format }}
   "#

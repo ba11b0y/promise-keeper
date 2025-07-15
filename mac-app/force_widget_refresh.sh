@@ -10,11 +10,11 @@ killall "Notification Center" 2>/dev/null || true
 
 # 2. Remove the app completely
 echo "2. Removing app from Applications..."
-sudo rm -rf "/Applications/SidebarApp.app" 2>/dev/null || true
+sudo rm -rf "/Applications/PromiseKeeper.app" 2>/dev/null || true
 
 # 3. Clear widget cache
 echo "3. Clearing widget cache..."
-rm -rf ~/Library/Caches/com.example.mac.SidebarApp* 2>/dev/null || true
+rm -rf ~/Library/Caches/com.example.mac.PromiseKeeper* 2>/dev/null || true
 rm -rf ~/Library/Caches/com.apple.chronod* 2>/dev/null || true
 
 # 4. Clear derived data (already done but just in case)

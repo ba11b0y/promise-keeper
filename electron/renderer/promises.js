@@ -128,6 +128,9 @@ class PromiseManager {
                     }
                 </div>` : '';
             
+            // Create metadata info
+            const metadataInfo = this.renderMetadataInfo(promise);
+            
             const promiseItemClasses = [
                 'promise-item',
                 isFromScreenshot ? 'from-screenshot' : '',
@@ -137,6 +140,7 @@ class PromiseManager {
             return `
                 <div class="${promiseItemClasses}">
                     <div class="promise-content">${this.escapeHtml(promise.content)}</div>
+                    ${metadataInfo}
                     ${resolutionInfo}
                     <div class="promise-meta">
                         <span class="promise-date">${this.formatDate(promise.created_at)}</span>
@@ -231,6 +235,33 @@ class PromiseManager {
     formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+
+    renderMetadataInfo(promise) {
+        const parts = [];
+        
+        if (promise.person) {
+            parts.push(`👤 ${this.escapeHtml(promise.person)}`);
+        }
+        
+        if (promise.due_date) {
+            const dueDate = new Date(promise.due_date);
+            const now = new Date();
+            const isOverdue = dueDate < now && !promise.resolved;
+            const dateStr = dueDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            parts.push(`📅 ${isOverdue ? '⚠️ ' : ''}${dateStr}`);
+        }
+        
+        if (promise.platform) {
+            parts.push(`💬 ${this.escapeHtml(promise.platform)}`);
+        }
+        
+        if (parts.length === 0) return '';
+        
+        return `<div class="promise-metadata-simple">${parts.join(' • ')}</div>`;
     }
 
     // Test method for resolved promises - can be removed in production

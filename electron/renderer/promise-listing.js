@@ -131,6 +131,30 @@ class PromiseListingPage {
                     <div class="add-promise-form" id="addPromiseForm" style="display: none;">
                         <div class="add-promise-content">
                             <input type="text" class="promise-input" id="promiseInput" placeholder="I promise to..." />
+                            <div class="add-promise-metadata">
+                                <div class="metadata-input-group">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    <input type="text" class="metadata-input" id="promisePersonInput" placeholder="To whom? (optional)" />
+                                </div>
+                                <div class="metadata-input-group">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                        <line x1="16" y1="2" x2="16" y2="6"/>
+                                        <line x1="8" y1="2" x2="8" y2="6"/>
+                                        <line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                    <input type="date" class="metadata-input" id="promiseDueDateInput" placeholder="Due date (optional)" />
+                                </div>
+                                <div class="metadata-input-group">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    <input type="text" class="metadata-input" id="promisePlatformInput" placeholder="Platform (optional)" />
+                                </div>
+                            </div>
                             <div class="add-promise-actions">
                                 <button class="listing-btn listing-btn-primary" id="addPromiseBtn">Add Promise</button>
                                 <button class="listing-btn listing-btn-ghost" id="cancelPromiseBtn">Cancel</button>
@@ -378,9 +402,13 @@ class PromiseListingPage {
     }
 
     filterAndRenderPromises() {
-        this.filteredPromises = this.promises.filter(promise =>
-            promise.content.toLowerCase().includes(this.searchQuery)
-        );
+        this.filteredPromises = this.promises.filter(promise => {
+            const query = this.searchQuery.toLowerCase();
+            return promise.content.toLowerCase().includes(query) ||
+                   (promise.person && promise.person.toLowerCase().includes(query)) ||
+                   (promise.platform && promise.platform.toLowerCase().includes(query)) ||
+                   (promise.due_date && new Date(promise.due_date).toLocaleDateString().toLowerCase().includes(query));
+        });
         console.log('filterAndRenderPromises: Filtered', this.filteredPromises.length, 'promises from', this.promises.length, 'total');
         this.renderPromises();
     }
@@ -430,6 +458,7 @@ class PromiseListingPage {
         const isResolved = promise.resolved;
         const screenshotIndicators = this.renderScreenshotIndicators(promise);
         const resolutionInfo = this.renderResolutionInfo(promise);
+        const metadataIcons = this.renderMetadataIcons(promise);
 
         return `
             <div class="promise-item ${isResolved ? 'promise-resolved' : ''}" data-promise-id="${promise.id}">
@@ -442,6 +471,7 @@ class PromiseListingPage {
                     </button>
                     <div class="promise-text-container">
                         <p class="promise-text ${isResolved ? 'promise-text-completed' : ''}">${this.escapeHtml(promise.content)}</p>
+                        ${metadataIcons}
                         ${resolutionInfo}
                     </div>
                     <div class="promise-actions">
@@ -573,6 +603,9 @@ class PromiseListingPage {
         this.isAddingPromise = false;
         const form = document.getElementById('addPromiseForm');
         const input = document.getElementById('promiseInput');
+        const personInput = document.getElementById('promisePersonInput');
+        const dueDateInput = document.getElementById('promiseDueDateInput');
+        const platformInput = document.getElementById('promisePlatformInput');
         
         if (!form || !input) return;
         
@@ -582,6 +615,9 @@ class PromiseListingPage {
         setTimeout(() => {
             form.style.display = 'none';
             input.value = '';
+            if (personInput) personInput.value = '';
+            if (dueDateInput) dueDateInput.value = '';
+            if (platformInput) platformInput.value = '';
             form.style.transform = 'translateY(0)';
         }, 200);
     }
@@ -589,6 +625,9 @@ class PromiseListingPage {
     async addPromise() {
         const input = document.getElementById('promiseInput');
         const content = input.value.trim();
+        const personInput = document.getElementById('promisePersonInput');
+        const dueDateInput = document.getElementById('promiseDueDateInput');
+        const platformInput = document.getElementById('promisePlatformInput');
 
         if (!content) return;
         if (!this.app.currentUser) {
@@ -597,12 +636,25 @@ class PromiseListingPage {
         }
 
         try {
+            const promiseData = {
+                content: content,
+                owner_id: this.app.currentUser.id
+            };
+
+            // Add optional fields if provided
+            if (personInput && personInput.value.trim()) {
+                promiseData.person = personInput.value.trim();
+            }
+            if (dueDateInput && dueDateInput.value) {
+                promiseData.due_date = new Date(dueDateInput.value).toISOString();
+            }
+            if (platformInput && platformInput.value.trim()) {
+                promiseData.platform = platformInput.value.trim();
+            }
+
             const { data, error } = await window.PromiseKeeperConfig.supabaseClient
                 .from('promises')
-                .insert([{
-                    content: content,
-                    owner_id: this.app.currentUser.id
-                }])
+                .insert([promiseData])
                 .select()
                 .single();
 
@@ -622,7 +674,7 @@ class PromiseListingPage {
                 window.electronAPI.notifications.show(
                     'Promise Added',
                     `${content}`,
-                    { action: 'promise_added', to_whom: '', start_date: '' }
+                    { action: 'promise_added', to_whom: promiseData.person || '', start_date: promiseData.due_date || '' }
                 );
             }
         } catch (err) {
@@ -905,6 +957,149 @@ class PromiseListingPage {
     formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+
+    formatDueDate(dateString) {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = date - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Format the date nicely
+        const dateStr = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        });
+        
+        // Add relative time for near dates
+        if (diffDays === 0) {
+            return `Today`;
+        } else if (diffDays === 1) {
+            return `Tomorrow`;
+        } else if (diffDays === -1) {
+            return `Yesterday`;
+        } else if (diffDays > 0 && diffDays <= 7) {
+            return `${dateStr} (${diffDays} days)`;
+        } else if (diffDays < 0) {
+            return `${dateStr} (overdue)`;
+        }
+        
+        return dateStr;
+    }
+
+    renderMetadataIcons(promise) {
+        const icons = [];
+        
+        // Person icon
+        if (promise.person) {
+            icons.push(`
+                <span class="promise-metadata-item promise-person" title="Promised to: ${this.escapeHtml(promise.person)}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>${this.escapeHtml(promise.person)}</span>
+                </span>
+            `);
+        }
+        
+        // Due date icon
+        if (promise.due_date) {
+            const formattedDate = this.formatDueDate(promise.due_date);
+            const isOverdue = new Date(promise.due_date) < new Date() && !promise.resolved;
+            icons.push(`
+                <span class="promise-metadata-item promise-due-date ${isOverdue ? 'overdue' : ''}" title="Due: ${formattedDate}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>${formattedDate}</span>
+                </span>
+            `);
+        }
+        
+        // Platform icon
+        if (promise.platform) {
+            const platformIcon = this.getPlatformIcon(promise.platform);
+            icons.push(`
+                <span class="promise-metadata-item promise-platform" title="Platform: ${this.escapeHtml(promise.platform)}">
+                    ${platformIcon}
+                    <span>${this.escapeHtml(promise.platform)}</span>
+                </span>
+            `);
+        }
+        
+        if (icons.length === 0) return '';
+        
+        return `<div class="promise-metadata">${icons.join('')}</div>`;
+    }
+
+    getPlatformIcon(platform) {
+        const platformLower = platform.toLowerCase();
+        
+        // Email icon
+        if (platformLower.includes('email') || platformLower.includes('mail')) {
+            return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+            </svg>`;
+        }
+        
+        // Slack icon
+        if (platformLower.includes('slack')) {
+            return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/>
+                <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/>
+                <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/>
+                <path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/>
+                <path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+                <path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/>
+                <path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/>
+            </svg>`;
+        }
+        
+        // Teams icon
+        if (platformLower.includes('teams') || platformLower.includes('microsoft')) {
+            return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>`;
+        }
+        
+        // Phone/Call icon
+        if (platformLower.includes('phone') || platformLower.includes('call')) {
+            return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>`;
+        }
+        
+        // Meeting/Video icon
+        if (platformLower.includes('meet') || platformLower.includes('zoom') || platformLower.includes('video')) {
+            return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>`;
+        }
+        
+        // Chat/Message icon
+        if (platformLower.includes('chat') || platformLower.includes('message')) {
+            return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>`;
+        }
+        
+        // Default communication icon
+        return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+        </svg>`;
     }
 
     destroy() {
